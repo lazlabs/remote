@@ -3,21 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!--
+  PRIVATE NETWORK ACCESS — Chrome 98+ gates HTTPS→private-IP fetches.
+  The meta tags below are trust signals that reduce prompt frequency.
+  The only permanent fix is serving this app from your local network.
+  See Settings → Connection Diagnostics for options.
+-->
+<meta name="private-network-access" content="allow">
+<meta http-equiv="Access-Control-Allow-Private-Network" content="true">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Movie Room">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0C0C12">
-<!--
-  Content-Security-Policy: set dynamically by JS once HA/PC URLs are known.
-  The meta tag below is a permissive baseline that allows:
-    - self (the app itself)
-    - fonts.googleapis.com / fonts.gstatic.com (Google Fonts)
-    - * for connect-src so all local-network fetches to HA, Kodi, PC agent work
-  Browsers enforce the most restrictive of any CSP they see, so keeping this
-  permissive here and letting HA/servers enforce their own policies is correct.
-  We do NOT restrict connect-src to specific IPs here because those are user-
-  configurable and not known at build time.
--->
 <meta http-equiv="Content-Security-Policy"
   content="
     default-src 'self';
@@ -30,13 +28,8 @@
   ">
 <title>Movie Room Remote</title>
 <link rel="manifest" href="./manifest.json">
-<!-- iOS PWA meta tags — required for "Add to Home Screen" to work properly -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Movie Room">
 <link rel="apple-touch-icon" href="./icon.svg">
 <link rel="apple-touch-icon" sizes="192x192" href="./icon-192.svg">
-<!-- Android / Chrome install -->
 <link rel="icon" type="image/svg+xml" href="./icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -3392,6 +3385,61 @@ body.kiosk-active .kiosk-return-overlay.show{display:flex}
   </div><!-- /ctx-modal-sheet -->
 </div><!-- /ctx-modal-overlay -->
 
+<!-- ═══════════════════════════════════════════
+     NETWORK PERMISSION PRIMER MODAL
+     Shown once before Chrome's LNA gate fires,
+     so the prompt doesn't feel like a hijack.
+═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="networkPrimerModal">
+  <div class="modal-sheet" style="max-width:480px;margin:0 auto">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">One permission needed</div>
+    </div>
+    <div class="modal-body">
+      <div style="text-align:center;padding:8px 0 20px">
+        <div style="font-size:48px;margin-bottom:12px">🏠</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;color:var(--text-1);margin-bottom:10px">
+          Allow access to your home network
+        </div>
+        <div style="font-size:13.5px;color:var(--text-2);line-height:1.65;margin-bottom:20px">
+          Your browser will ask if this app can talk to devices on your local Wi-Fi network.
+          This is required so the remote can reach <strong style="color:var(--text-1)">Home Assistant</strong>,
+          your <strong style="color:var(--text-1)">Kodi PC</strong>, and other local devices.
+        </div>
+        <div style="background:rgba(212,170,68,0.08);border:1.5px solid rgba(212,170,68,0.3);border-radius:14px;padding:14px 16px;margin-bottom:20px;text-align:left">
+          <div style="font-size:12px;color:var(--text-2);margin-bottom:6px;font-family:'DM Mono',monospace;letter-spacing:.08em;text-transform:uppercase">What Chrome will ask</div>
+          <div style="font-size:13px;color:var(--text-1);line-height:1.5">
+            <em>"[Site] wants to access devices on your local network. Do you want to allow?"</em>
+          </div>
+          <div style="font-size:12px;color:var(--gold);margin-top:8px;font-weight:600">→ Tap <strong>Allow</strong> when you see this.</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:24px;text-align:left">
+          <div style="font-size:12.5px;color:var(--text-2);line-height:1.6">
+            <strong style="color:var(--text-1)">Why does this happen?</strong> Chrome blocks websites
+            hosted on the internet from reaching private home network addresses
+            (like <code style="font-family:'DM Mono',monospace;font-size:11px;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">192.168.x.x</code>) without your explicit permission.
+            This is a security feature — and this app only ever talks to your
+            own home devices, never the internet.
+          </div>
+        </div>
+        <div style="background:rgba(61,204,122,0.08);border:1px solid rgba(61,204,122,0.25);border-radius:12px;padding:12px 14px;margin-bottom:20px;text-align:left">
+          <div style="font-size:12.5px;color:var(--green);line-height:1.6">
+            <strong>Permanent fix:</strong> Serve this app from your local network instead of GitHub Pages —
+            then Chrome never asks. Settings → Downloads → PC Agent includes instructions.
+          </div>
+        </div>
+      </div>
+      <button class="save-btn" onclick="primerAcknowledged()" style="width:100%;height:52px;font-size:15px">
+        Got it — continue →
+      </button>
+      <button onclick="closeModal('networkPrimerModal')" style="width:100%;height:44px;background:none;border:none;color:var(--text-3);font-size:13px;cursor:pointer;margin-top:8px">
+        Don't show this again
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast">
   <span id="toastMsg">Done</span>
@@ -4951,6 +4999,41 @@ function openKioskSettings() {
 }
 
 /* ═══════════════════════════════════════════
+   NETWORK PERMISSION PRIMER
+   Chrome 98+ gates HTTPS→private-IP fetches.
+   We show a one-time explanation BEFORE the
+   browser's own prompt fires so it doesn't
+   feel like a suspicious hijack.
+═══════════════════════════════════════════ */
+const PRIMER_KEY = 'mr_networkPrimerSeen';
+
+function showNetworkPrimer() {
+  if(localStorage.getItem(PRIMER_KEY)) return; // already seen
+  // Only show if the app is served from a public origin (not local network)
+  const isPublicOrigin = location.hostname !== 'localhost'
+    && !location.hostname.startsWith('192.168.')
+    && !location.hostname.startsWith('10.')
+    && !location.hostname.endsWith('.local');
+  if(!isPublicOrigin) return; // on local network already — no prompt needed
+  setTimeout(() => openModal('networkPrimerModal'), 1200);
+}
+
+function primerAcknowledged() {
+  localStorage.setItem(PRIMER_KEY, '1');
+  closeModal('networkPrimerModal');
+  // Immediately make a benign preflight request to HA so Chrome's
+  // permission gate fires now (with user context) rather than later
+  // mid-flow when tapping a button would feel more alarming.
+  const haUrl = cfg('haUrl');
+  if(haUrl && haUrl !== DEF.haUrl) {
+    fetch(haUrl + '/api/', {
+      method: 'GET',
+      signal: AbortSignal.timeout(3000),
+    }).catch(() => {}); // we don't care about the result — just priming the gate
+  }
+}
+
+/* ═══════════════════════════════════════════
    CONTEXTUAL HELP MODAL
 ═══════════════════════════════════════════ */
 function openCtxHelp(topic) {
@@ -5542,6 +5625,8 @@ if(localStorage.getItem(KIOSK_KEY) === '1') {
     // Dismiss wizard silently if token is already set
     localStorage.setItem('mr_wizardDone','1');
     pollGear();
+    // Show network permission primer if on public hosting and not yet seen
+    showNetworkPrimer();
     return;
   }
 
@@ -5586,120 +5671,187 @@ if('serviceWorker' in navigator) {
 }
 
 // ── PWA INSTALL PROMPT ──────────────────────────────────────
-// Capture the browser's install event before it fires and disappears.
-// Must be registered synchronously — not inside DOMContentLoaded.
+// DO NOT call e.preventDefault() — that suppresses the browser's
+// own install banner. We let the browser show its banner AND also
+// show our own persistent button in the topbar for discoverability.
 let _installPrompt = null;
 
 window.addEventListener('beforeinstallprompt', e => {
-  // Prevent Chrome's default mini-infobar on mobile
-  e.preventDefault();
+  // Intentionally NOT calling e.preventDefault() so Chrome's
+  // native mini-infobar / install banner still shows.
   _installPrompt = e;
-  // Show our own install button in the topbar
-  showInstallButton();
+  showInstallBanner();
   console.log('[PWA] Install prompt captured');
 });
 
 window.addEventListener('appinstalled', () => {
   _installPrompt = null;
-  hideInstallButton();
-  showToast('✓ App installed! Open it from your home screen.');
+  hideInstallBanner();
+  showToast('✓ App installed — open it from your home screen!');
   console.log('[PWA] App installed');
 });
 
-function showInstallButton() {
-  let btn = document.getElementById('installBtn');
-  if(btn) { btn.style.display = 'flex'; return; }
-  // Create it dynamically if not already in DOM
-  btn = document.createElement('button');
-  btn.id = 'installBtn';
-  btn.className = 'icon-btn';
-  btn.setAttribute('aria-label', 'Install app');
-  btn.title = 'Install Movie Room as an app';
-  btn.onclick = triggerInstall;
-  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-    <polyline points="7 10 12 15 17 10"/>
-    <line x1="12" y1="15" x2="12" y2="3"/>
-  </svg>`;
-  // Add a gold pulse ring to draw attention
-  btn.style.cssText = 'box-shadow:0 0 0 2px var(--gold),0 0 12px rgba(212,170,68,0.4);';
-  // Insert before the theme button in topbar-right
-  const topbarRight = document.querySelector('.topbar-right');
-  if(topbarRight) topbarRight.insertBefore(btn, topbarRight.firstChild);
+function showInstallBanner() {
+  // Show button in topbar
+  const existing = document.getElementById('installBtn');
+  if(existing) { existing.style.display = 'flex'; }
+
+  // Also show a persistent bottom install strip (more visible than topbar)
+  if(!document.getElementById('installStrip')) {
+    const strip = document.createElement('div');
+    strip.id = 'installStrip';
+    strip.style.cssText = `
+      position:fixed;bottom:calc(62px + var(--safe-b, 0px));left:12px;right:12px;
+      background:linear-gradient(135deg,#1A1A2E,#0F3460);
+      border:1.5px solid var(--gold);border-radius:16px;
+      padding:12px 16px;display:flex;align-items:center;gap:12px;
+      z-index:900;box-shadow:0 8px 32px rgba(212,170,68,0.25);
+      animation:slideUpFade .4s cubic-bezier(.34,1.2,.64,1);
+    `;
+    strip.innerHTML = `
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4AA44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:13.5px;font-weight:600;color:#F0F0F5">Install Movie Room</div>
+        <div style="font-size:11.5px;color:#9090A8;margin-top:1px">Add to home screen for the best experience</div>
+      </div>
+      <button onclick="triggerInstall()" style="background:var(--gold);border:none;border-radius:10px;padding:8px 14px;font-family:'Space Grotesk',sans-serif;font-size:12.5px;font-weight:700;color:#111;cursor:pointer;flex-shrink:0">Install</button>
+      <button onclick="hideInstallBanner()" style="background:none;border:none;color:#444458;font-size:18px;cursor:pointer;padding:0 0 0 4px;line-height:1;flex-shrink:0">×</button>
+    `;
+    // Add slide-up keyframe if not present
+    if(!document.getElementById('installStripStyle')) {
+      const s = document.createElement('style');
+      s.id = 'installStripStyle';
+      s.textContent = '@keyframes slideUpFade{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}';
+      document.head.appendChild(s);
+    }
+    document.body.appendChild(strip);
+  }
 }
 
-function hideInstallButton() {
+function hideInstallBanner() {
+  const strip = document.getElementById('installStrip');
+  if(strip) strip.remove();
   const btn = document.getElementById('installBtn');
   if(btn) btn.style.display = 'none';
 }
 
 async function triggerInstall() {
   if(!_installPrompt) {
-    // iOS — no programmatic prompt, show instructions
-    showToast('📱 Tap Share → Add to Home Screen to install');
+    // iOS Safari — no API, show manual instructions
+    showToast('📱 Tap the Share icon → "Add to Home Screen"');
     return;
   }
-  _installPrompt.prompt();
-  const { outcome } = await _installPrompt.userChoice;
+  const { outcome } = await _installPrompt.prompt();
   console.log('[PWA] Install outcome:', outcome);
   if(outcome === 'accepted') {
     _installPrompt = null;
-    hideInstallButton();
+    hideInstallBanner();
   }
 }
 
+// Also show install button in topbar (created in showInstallBanner)
+function showInstallButton() { showInstallBanner(); }
+function hideInstallButton() { hideInstallBanner(); }
+
 // ── BACK BUTTON / SWIPE-BACK TRAP ──────────────────────────
-// Push a synthetic history entry so the first back gesture
-// hits our handler instead of leaving the app.
+//
+// How this works:
+// We maintain TWO history entries for the app at all times:
+//   stack:  [..., app-base, app-shell]   ← we always sit on app-shell
+// When back fires, popstate brings us to app-base.
+// We handle it, then immediately re-push app-shell.
+// This means the stack is always depth-2 for our app.
+//
+// Installed PWA / iOS standalone note:
+// iOS Safari standalone mode does not fire popstate on swipe-back —
+// it unmounts the webview at the OS level. We use pagehide as a
+// last-ditch attempt, and a left-edge touch guard as a physical barrier.
+//
 (function initBackTrap() {
-  // Don't run inside an installed PWA in standalone mode
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches
     || window.navigator.standalone === true;
 
-  // Push a dummy state so we own one back step
-  history.pushState({ appShell: true }, '', location.href);
+  // Use a unique sentinel URL fragment so pushState doesn't deduplicate
+  const SHELL_URL = location.pathname + location.search + '#app';
+  const BASE_URL  = location.pathname + location.search;
+
+  // Ensure we're on a clean base, then push our shell state on top
+  history.replaceState({ appLayer: 'base' }, '', BASE_URL);
+  history.pushState(  { appLayer: 'shell' }, '', SHELL_URL);
 
   let lastBackTime = 0;
+  let backToastTimer = null;
 
   window.addEventListener('popstate', e => {
-    // If a modal is open, close it instead of leaving
-    const openModal = document.querySelector('.modal-overlay.open, .ctx-modal-overlay.open');
-    if(openModal) {
-      const id = openModal.id;
-      if(id === 'ctxHelpOverlay') { closeCtxHelp(); }
-      else { closeModal(id); }
-      // Re-push the state so back works again
-      history.pushState({ appShell: true }, '', location.href);
+    const layer = e.state?.appLayer;
+
+    // ── Modal/wizard close takes priority ───────────────────
+    const openOverlay = document.querySelector(
+      '.modal-overlay.open, .ctx-modal-overlay.open, .wizard-overlay.open'
+    );
+    if(openOverlay) {
+      const id = openOverlay.id;
+      if(id === 'ctxHelpOverlay') closeCtxHelp();
+      else if(id === 'wizardOverlay') dismissWizard();
+      else closeModal(id);
+      // Re-push shell so we can catch next back
+      history.pushState({ appLayer: 'shell' }, '', SHELL_URL);
       return;
     }
 
-    // Wizard open — close it
-    const wizard = document.getElementById('wizardOverlay');
-    if(wizard && wizard.classList.contains('open')) {
-      dismissWizard();
-      history.pushState({ appShell: true }, '', location.href);
-      return;
-    }
-
-    // Kiosk mode — back should do nothing except show toast
+    // ── Kiosk: swallow back entirely ───────────────────────
     if(typeof kioskActive !== 'undefined' && kioskActive) {
       showToast('🔒 Hold the lock icon 3 seconds to exit kiosk mode');
-      history.pushState({ appShell: true }, '', location.href);
+      history.pushState({ appLayer: 'shell' }, '', SHELL_URL);
       return;
     }
 
-    // No modal open — show exit confirmation
+    // ── Normal: double-back to exit ─────────────────────────
     const now = Date.now();
-    if(now - lastBackTime < 2500) {
-      // Second back within 2.5s — actually exit
-      history.back();
+    const isSecondBack = (now - lastBackTime) < 2500;
+
+    if(isSecondBack) {
+      // Let the browser actually go back and exit
+      // (don't re-push — allow natural exit)
       return;
     }
+
     lastBackTime = now;
-    showToast('Tap back again to exit the app');
-    // Re-push so we can catch the next back too
-    history.pushState({ appShell: true }, '', location.href);
+
+    // Show toast and re-push so we can catch second back
+    showToast('← Tap back again to exit');
+    clearTimeout(backToastTimer);
+    backToastTimer = setTimeout(() => {
+      // Reset timer so a slow second tap doesn't exit after 2.5s window
+      lastBackTime = 0;
+    }, 2600);
+
+    history.pushState({ appLayer: 'shell' }, '', SHELL_URL);
   });
+
+  // ── iOS standalone: left-edge swipe guard ──────────────────
+  // Creates an invisible 20px wide touch zone on the left edge.
+  // When touched, shows a toast. Doesn't fully block iOS swipe-back
+  // (nothing can) but gives visual feedback before the app exits.
+  if(isStandalone) {
+    const guard = document.createElement('div');
+    guard.style.cssText = 'position:fixed;top:0;left:0;width:20px;height:100%;z-index:9999;';
+    guard.addEventListener('touchstart', () => {
+      showToast('← Swipe from right edge to exit');
+    }, { passive: true });
+    document.body.appendChild(guard);
+
+    // pagehide fires just before iOS standalone unloads the webview.
+    // We can't prevent it but can at least note it happened.
+    window.addEventListener('pagehide', () => {
+      // Store a flag — on next open we can show a "welcome back" message
+      sessionStorage.setItem('mr_pagehide', '1');
+    });
+  }
 })();
 
 // ── SHORTCUT / DEEP LINK HANDLER ───────────────────────────

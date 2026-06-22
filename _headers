@@ -1,0 +1,18 @@
+# GitHub Pages / Netlify _headers file
+# Adds response headers that reduce Chrome's Local Network Access
+# permission prompt frequency when accessing HA from a public-hosted app.
+#
+# GitHub Pages supports this file natively.
+
+/*
+  Access-Control-Allow-Private-Network: true
+  Access-Control-Allow-Origin: *
+  Permissions-Policy: local-network-devices=*
+
+/theater-remote.html
+  Cache-Control: no-cache
+  Access-Control-Allow-Private-Network: true
+
+/sw.js
+  Cache-Control: no-cache, no-store
+  Service-Worker-Allowed: /
