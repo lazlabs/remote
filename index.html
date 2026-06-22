@@ -2861,6 +2861,9 @@ body.kiosk-active .kiosk-return-overlay.show{display:flex}
         <div class="ctx-callout info" style="margin-bottom:12px">
           <strong>Already connected?</strong> If HA opened when you set up the app, your URL is whatever was in your browser's address bar — usually <code>http://homeassistant.local:8123</code> or an IP like <code>http://192.168.1.X:8123</code>.
         </div>
+        <div class="ctx-callout warn" style="margin-bottom:12px">
+          <strong>If you get "Failed to fetch":</strong> Chrome may be blocking the request. Look for a Chrome bar asking to <strong>"access devices on your local network"</strong> and tap <strong>Allow</strong>. Or go to <code>chrome://settings/content/localNetworkDevices</code> and allow this site manually. Then tap Retry.
+        </div>
         <div class="wizard-field">
           <label>Long-Lived Access Token <button class="help-trigger" onclick="openCtxHelp('token')" aria-label="Help creating a token">?</button></label>
           <input type="password" id="wzToken" placeholder="Paste your HA token here" autocomplete="off">
@@ -3487,6 +3490,13 @@ const state = {
 /* ═══════════════════════════════════════════
    HA API
 ═══════════════════════════════════════════ */
+/* AbortSignal.timeout() polyfill — not supported in all browsers */
+function _abortAfter(ms) {
+  const c = new AbortController();
+  setTimeout(() => c.abort(), ms);
+  return c.signal;
+}
+
 async function haService(service, data={}) {
   const [d,s] = service.split('/');
   const r = await fetch(`${cfg('haUrl')}/api/services/${d}/${s}`, {
@@ -3922,7 +3932,7 @@ async function kodiCall(method, params={}) {
   const headers = {'Content-Type':'application/json'};
   if(user) headers['Authorization'] = 'Basic ' + btoa(user+':'+pass);
   const body = JSON.stringify({jsonrpc:'2.0',method,params,id:kodiReqId++});
-  const r = await fetch(url, {method:'POST',headers,body,signal:AbortSignal.timeout(4000)});
+  const r = await fetch(url, {method:'POST',headers,body,signal:_abortAfter(4000)});
   if(!r.ok) throw new Error('Kodi '+r.status);
   const data = await r.json();
   if(data.error) throw new Error(data.error.message);
@@ -4020,7 +4030,7 @@ async function pcAgentCall(command) {
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({command}),
-    signal:AbortSignal.timeout(5000),
+    signal:_abortAfter(5000),
   });
   if(!r.ok) throw new Error('Agent '+r.status);
   return r.json();
@@ -4031,7 +4041,7 @@ async function pingPcAgent() {
   el.className='ping-result'; el.textContent='pinging…';
   const t0=Date.now();
   try {
-    const r = await fetch(`${cfg('pcAgent')}/ping`,{signal:AbortSignal.timeout(3000)});
+    const r = await fetch(`${cfg('pcAgent')}/ping`,{signal:_abortAfter(3000)});
     if(r.ok) { el.className='ping-result ok'; el.textContent=`✓ ${Date.now()-t0}ms`; }
     else { throw new Error(r.status); }
   } catch(e) {
@@ -4562,22 +4572,38 @@ async function pingHA() {
   result.className = 'ping-result';
   result.textContent = 'pinging…';
   const t0 = Date.now();
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+
   try {
     const r = await fetch(`${cfg('haUrl')}/api/`, {
       headers: {'Authorization': `Bearer ${cfg('haToken')}`},
-      signal: AbortSignal.timeout(5000),
+      signal: controller.signal,
+      mode: 'cors',
     });
+    clearTimeout(timer);
     const ms = Date.now() - t0;
     if(r.ok) {
       result.className = 'ping-result ok';
       result.textContent = `✓ ${ms}ms`;
+    } else if(r.status === 401) {
+      result.className = 'ping-result fail';
+      result.textContent = `✗ 401 — bad token`;
     } else {
       result.className = 'ping-result fail';
       result.textContent = `✗ HTTP ${r.status}`;
     }
   } catch(e) {
+    clearTimeout(timer);
     result.className = 'ping-result fail';
-    result.textContent = e.name === 'TimeoutError' ? '✗ timeout' : '✗ unreachable';
+    if(e.name === 'AbortError') {
+      result.textContent = '✗ timeout';
+    } else if((e.message||'').toLowerCase().includes('failed to fetch') && location.protocol === 'http:') {
+      result.innerHTML = '✗ LNA blocked — <a href="chrome://settings/content/localNetworkDevices" style="color:var(--gold)">fix in Chrome</a>';
+    } else {
+      result.textContent = `✗ ${e.message || 'unreachable'}`;
+    }
   }
 }
 
@@ -4623,53 +4649,114 @@ function goWizardStep(n) {
 }
 
 function wizardStep0Next() {
-  const url   = document.getElementById('wzHaUrl').value.trim().replace(/\/$/,'');
-  const token = document.getElementById('wzToken')?.value.trim() || '';
+  const url   = (document.getElementById('wzHaUrl').value || '').trim().replace(/\/$/,'');
+  const token = (document.getElementById('wzToken')?.value || '').trim();
+
   if(!url || !url.startsWith('http')) {
     showToast('⚠️ Enter a valid HA URL first', 'error'); return;
   }
-  // Save URL and token immediately
+
+  // Save immediately — don't wait for the test
   localStorage.setItem('mr_haUrl', url);
   if(token) localStorage.setItem('mr_haToken', token);
-  // populate main settings fields too
   const mainUrl = document.getElementById('cfgHaUrl');
   const mainTok = document.getElementById('cfgToken');
   if(mainUrl) mainUrl.value = url;
   if(mainTok && token) mainTok.value = token;
 
-  // Test connection before advancing
   const statusEl = document.getElementById('wzConnectStatus');
   statusEl.style.display = 'flex';
   statusEl.className = 'wizard-connect-status';
-  statusEl.textContent = '⏳ Testing connection…';
+  statusEl.innerHTML = '⏳ Testing connection…';
+
+  // AbortSignal.timeout() is not universally supported — use setTimeout fallback
+  let didFinish = false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    if(!didFinish) controller.abort();
+  }, 7000);
 
   fetch(`${url}/api/`, {
     headers: token ? {'Authorization': `Bearer ${token}`} : {},
-    signal: AbortSignal.timeout(6000),
-  }).then(r => {
-    if(r.ok) {
+    signal: controller.signal,
+    mode: 'cors',
+  })
+  .then(r => {
+    didFinish = true; clearTimeout(timer);
+    if(r.ok || r.status === 401) {
+      if(r.status === 401) {
+        statusEl.className = 'wizard-connect-status fail';
+        statusEl.innerHTML = `⚠️ <strong>Reached HA but token was rejected.</strong><br>
+          Double-check you copied the full token — it's a very long string.
+          Tap the <strong>?</strong> next to Token for step-by-step instructions.
+          <br><br><button onclick="goWizardStep(1)" style="margin-top:4px;background:var(--surface-md);border:1px solid var(--border);color:var(--text-1);padding:8px 14px;border-radius:8px;font-size:12.5px;cursor:pointer">Skip test → continue anyway</button>`;
+        return;
+      }
       statusEl.className = 'wizard-connect-status ok';
       statusEl.textContent = '✓ Connected to Home Assistant!';
       localStorage.setItem('mr_wizardDone_step0', '1');
       setTimeout(() => goWizardStep(1), 800);
-    } else if(r.status === 401) {
-      statusEl.className = 'wizard-connect-status fail';
-      statusEl.textContent = '⚠️ Reached HA but token was rejected. Tap ? next to Token for help creating one.';
     } else {
       statusEl.className = 'wizard-connect-status fail';
-      statusEl.textContent = `⚠️ HA responded with HTTP ${r.status}`;
+      statusEl.innerHTML = _wzErrorHtml(url, token, `HA returned HTTP ${r.status}`);
     }
-  }).catch(e => {
-    const isHttps = location.protocol === 'https:';
-    const isHttp  = url.startsWith('http:');
-    if(isHttps && isHttp) {
-      statusEl.className = 'wizard-connect-status fail';
-      statusEl.innerHTML = '⚠️ <strong>Mixed content blocked.</strong> This app is on HTTPS but your HA URL is HTTP. Either enable HTTPS on HA, or open this app over HTTP. Tap ⚙ → Connection Diagnostics for details.';
-    } else {
-      statusEl.className = 'wizard-connect-status fail';
-      statusEl.textContent = `⚠️ Cannot reach HA: ${e.message}. Check the URL and that you're on the same Wi-Fi.`;
-    }
+  })
+  .catch(e => {
+    didFinish = true; clearTimeout(timer);
+    const errName = e.name || '';
+    const errMsg  = (e.message || '').toLowerCase();
+    const appIsHttps  = location.protocol === 'https:';
+    const haIsHttp    = url.startsWith('http:');
+    const appIsHttp   = location.protocol === 'http:';
+    const isTimeout   = errName === 'AbortError' || errMsg.includes('abort') || errMsg.includes('timeout');
+    const isFetch     = errMsg.includes('failed to fetch') || errMsg.includes('networkerror') || errMsg.includes('network request failed');
+    const isLNA       = isFetch && appIsHttp && haIsHttp; // both HTTP but different IPs → LNA gate
+
+    statusEl.className = 'wizard-connect-status fail';
+    statusEl.innerHTML = _wzErrorHtml(url, token,
+      isTimeout ? 'Request timed out'
+      : isLNA   ? 'Browser blocked (Local Network Access)'
+      : isFetch ? 'Failed to fetch — browser blocked the request'
+      : e.message || 'Unknown error'
+    );
   });
+}
+
+function _wzErrorHtml(url, token, reason) {
+  const appIsHttps = location.protocol === 'https:';
+  const haIsHttp   = url.startsWith('http:');
+  const appIsHttp  = location.protocol === 'http:';
+  const haIsHttps  = url.startsWith('https:');
+
+  let diagnosis = '';
+  let fix = '';
+
+  if(appIsHttps && haIsHttp) {
+    diagnosis = '🔒 <strong>Mixed content blocked.</strong> This app is on HTTPS but your HA URL is HTTP. Chrome blocks this automatically.';
+    fix = 'Access this app over HTTP instead of HTTPS, or enable HTTPS on your HA instance (Nabu Casa does this automatically).';
+  } else if(appIsHttp && haIsHttp) {
+    diagnosis = '🌐 <strong>Browser blocked the request.</strong> Chrome requires permission to access local network devices.';
+    fix = 'Look for a Chrome prompt asking to "access devices on your local network" and tap <strong>Allow</strong>. If no prompt appeared, try refreshing the page. You can also go to chrome://settings/content/localNetworkDevices and allow this site manually.';
+  } else if(haIsHttps && appIsHttps) {
+    diagnosis = '🔒 <strong>Could not reach HA.</strong> Both app and HA are HTTPS which is correct, but the connection failed.';
+    fix = 'Check the URL is exactly right including port. Try opening <code style="font-size:11px;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">' + url + '/api/</code> directly in a browser tab on this device.';
+  } else {
+    diagnosis = '📡 <strong>Could not reach Home Assistant.</strong>';
+    fix = 'Make sure you\'re on the same Wi-Fi network as HA. Try opening the HA URL directly in a browser tab first to confirm it loads.';
+  }
+
+  return `
+    <div style="font-size:12.5px;line-height:1.65;width:100%">
+      <div style="margin-bottom:6px">${diagnosis}</div>
+      <div style="color:var(--text-2);margin-bottom:2px"><em>Reason: ${reason}</em></div>
+      <div style="margin:10px 0;padding:10px 12px;background:rgba(255,255,255,.05);border-radius:8px;color:var(--text-2)">${fix}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button onclick="wizardStep0Next()" style="background:var(--gold);border:none;color:#111;padding:9px 14px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer">↺ Retry</button>
+        <button onclick="goWizardStep(1)" style="background:var(--surface-md);border:1px solid var(--border);color:var(--text-1);padding:9px 14px;border-radius:8px;font-size:12.5px;cursor:pointer">Skip test → continue anyway</button>
+        <button onclick="openCtxHelp('url')" style="background:none;border:1px solid var(--border);color:var(--text-2);padding:9px 14px;border-radius:8px;font-size:12.5px;cursor:pointer">? Help</button>
+      </div>
+    </div>
+  `;
 }
 
 function wizardStep1Next() {
@@ -4724,7 +4811,7 @@ async function runDiagnostics() {
         try {
           const r = await fetch(`${cfg('haUrl')}/api/`, {
             headers: cfg('haToken') ? {'Authorization':`Bearer ${cfg('haToken')}`} : {},
-            signal: AbortSignal.timeout(6000),
+            signal: _abortAfter(6000),
           });
           if(r.ok) return {ok:true, msg:`Reachable — ${Date.now()-t0}ms`};
           if(r.status===401) return {ok:'warn', msg:`Reachable but 401 Unauthorized — check your token`};
@@ -4746,7 +4833,7 @@ async function runDiagnostics() {
           const r = await fetch(`${cfg('haUrl')}/api/`, {
             method:'GET',
             headers: {'Authorization':`Bearer ${cfg('haToken')}`},
-            signal: AbortSignal.timeout(5000),
+            signal: _abortAfter(5000),
           });
           const acao = r.headers.get('access-control-allow-origin');
           if(acao) return {ok:true, msg:`CORS OK — Access-Control-Allow-Origin: ${acao}`};
@@ -4765,7 +4852,7 @@ async function runDiagnostics() {
         try {
           const r = await fetch(`${cfg('haUrl')}/api/`, {
             headers:{'Authorization':`Bearer ${cfg('haToken')}`},
-            signal:AbortSignal.timeout(5000),
+            signal:_abortAfter(5000),
           });
           if(r.ok) {
             const data = await r.json().catch(()=>({}));
@@ -5028,7 +5115,7 @@ function primerAcknowledged() {
   if(haUrl && haUrl !== DEF.haUrl) {
     fetch(haUrl + '/api/', {
       method: 'GET',
-      signal: AbortSignal.timeout(3000),
+      signal: _abortAfter(3000),
     }).catch(() => {}); // we don't care about the result — just priming the gate
   }
 }
