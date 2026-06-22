@@ -2862,7 +2862,7 @@ body.kiosk-active .kiosk-return-overlay.show{display:flex}
           <strong>Already connected?</strong> If HA opened when you set up the app, your URL is whatever was in your browser's address bar — usually <code>http://homeassistant.local:8123</code> or an IP like <code>http://192.168.1.X:8123</code>.
         </div>
         <div class="ctx-callout warn" style="margin-bottom:12px">
-          <strong>If you get "Failed to fetch":</strong> Chrome may be blocking the request. Look for a Chrome bar asking to <strong>"access devices on your local network"</strong> and tap <strong>Allow</strong>. Or go to <code>chrome://settings/content/localNetworkDevices</code> and allow this site manually. Then tap Retry.
+          <strong>If you get "Failed to fetch":</strong> Chrome may be blocking the request. Look for a bar at the top or bottom of Chrome asking to <strong>"access devices on your local network"</strong> — tap <strong>Allow</strong>. Then tap Retry.
         </div>
         <div class="wizard-field">
           <label>Long-Lived Access Token <button class="help-trigger" onclick="openCtxHelp('token')" aria-label="Help creating a token">?</button></label>
@@ -4598,9 +4598,9 @@ async function pingHA() {
     clearTimeout(timer);
     result.className = 'ping-result fail';
     if(e.name === 'AbortError') {
-      result.textContent = '✗ timeout';
-    } else if((e.message||'').toLowerCase().includes('failed to fetch') && location.protocol === 'http:') {
-      result.innerHTML = '✗ LNA blocked — <a href="chrome://settings/content/localNetworkDevices" style="color:var(--gold)">fix in Chrome</a>';
+      result.textContent = '✗ timeout — HA not responding';
+    } else if((e.message||'').toLowerCase().includes('failed to fetch')) {
+      result.textContent = '✗ blocked — tap Allow if Chrome asked about network access';
     } else {
       result.textContent = `✗ ${e.message || 'unreachable'}`;
     }
@@ -4736,7 +4736,7 @@ function _wzErrorHtml(url, token, reason) {
     fix = 'Access this app over HTTP instead of HTTPS, or enable HTTPS on your HA instance (Nabu Casa does this automatically).';
   } else if(appIsHttp && haIsHttp) {
     diagnosis = '🌐 <strong>Browser blocked the request.</strong> Chrome requires permission to access local network devices.';
-    fix = 'Look for a Chrome prompt asking to "access devices on your local network" and tap <strong>Allow</strong>. If no prompt appeared, try refreshing the page. You can also go to chrome://settings/content/localNetworkDevices and allow this site manually.';
+    fix = 'Look for a Chrome bar at the top or bottom of your screen asking to <strong>"access devices on your local network"</strong> — tap <strong>Allow</strong>. If you missed it, reload the page and it should reappear. Once allowed, tap Retry here.';
   } else if(haIsHttps && appIsHttps) {
     diagnosis = '🔒 <strong>Could not reach HA.</strong> Both app and HA are HTTPS which is correct, but the connection failed.';
     fix = 'Check the URL is exactly right including port. Try opening <code style="font-size:11px;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px">' + url + '/api/</code> directly in a browser tab on this device.';
