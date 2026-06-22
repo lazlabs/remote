@@ -5567,18 +5567,15 @@ if(localStorage.getItem(KIOSK_KEY) === '1') {
 })();
 
 // ── PWA SERVICE WORKER ──────────────────────────────────────
-// Registers sw.js from same origin — required for install prompt.
-// Blob-URL registration (old approach) is rejected by browsers.
 if('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
       .then(reg => {
         console.log('[SW] Registered, scope:', reg.scope);
-        // Listen for updates — notify user if new version available
         reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          newWorker.addEventListener('statechange', () => {
-            if(newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          const nw = reg.installing;
+          nw.addEventListener('statechange', () => {
+            if(nw.state === 'installed' && navigator.serviceWorker.controller) {
               showToast('🔄 Update available — reload to refresh');
             }
           });
@@ -5588,15 +5585,129 @@ if('serviceWorker' in navigator) {
   });
 }
 
+// ── PWA INSTALL PROMPT ──────────────────────────────────────
+// Capture the browser's install event before it fires and disappears.
+// Must be registered synchronously — not inside DOMContentLoaded.
+let _installPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  // Prevent Chrome's default mini-infobar on mobile
+  e.preventDefault();
+  _installPrompt = e;
+  // Show our own install button in the topbar
+  showInstallButton();
+  console.log('[PWA] Install prompt captured');
+});
+
+window.addEventListener('appinstalled', () => {
+  _installPrompt = null;
+  hideInstallButton();
+  showToast('✓ App installed! Open it from your home screen.');
+  console.log('[PWA] App installed');
+});
+
+function showInstallButton() {
+  let btn = document.getElementById('installBtn');
+  if(btn) { btn.style.display = 'flex'; return; }
+  // Create it dynamically if not already in DOM
+  btn = document.createElement('button');
+  btn.id = 'installBtn';
+  btn.className = 'icon-btn';
+  btn.setAttribute('aria-label', 'Install app');
+  btn.title = 'Install Movie Room as an app';
+  btn.onclick = triggerInstall;
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+    <polyline points="7 10 12 15 17 10"/>
+    <line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>`;
+  // Add a gold pulse ring to draw attention
+  btn.style.cssText = 'box-shadow:0 0 0 2px var(--gold),0 0 12px rgba(212,170,68,0.4);';
+  // Insert before the theme button in topbar-right
+  const topbarRight = document.querySelector('.topbar-right');
+  if(topbarRight) topbarRight.insertBefore(btn, topbarRight.firstChild);
+}
+
+function hideInstallButton() {
+  const btn = document.getElementById('installBtn');
+  if(btn) btn.style.display = 'none';
+}
+
+async function triggerInstall() {
+  if(!_installPrompt) {
+    // iOS — no programmatic prompt, show instructions
+    showToast('📱 Tap Share → Add to Home Screen to install');
+    return;
+  }
+  _installPrompt.prompt();
+  const { outcome } = await _installPrompt.userChoice;
+  console.log('[PWA] Install outcome:', outcome);
+  if(outcome === 'accepted') {
+    _installPrompt = null;
+    hideInstallButton();
+  }
+}
+
+// ── BACK BUTTON / SWIPE-BACK TRAP ──────────────────────────
+// Push a synthetic history entry so the first back gesture
+// hits our handler instead of leaving the app.
+(function initBackTrap() {
+  // Don't run inside an installed PWA in standalone mode
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+
+  // Push a dummy state so we own one back step
+  history.pushState({ appShell: true }, '', location.href);
+
+  let lastBackTime = 0;
+
+  window.addEventListener('popstate', e => {
+    // If a modal is open, close it instead of leaving
+    const openModal = document.querySelector('.modal-overlay.open, .ctx-modal-overlay.open');
+    if(openModal) {
+      const id = openModal.id;
+      if(id === 'ctxHelpOverlay') { closeCtxHelp(); }
+      else { closeModal(id); }
+      // Re-push the state so back works again
+      history.pushState({ appShell: true }, '', location.href);
+      return;
+    }
+
+    // Wizard open — close it
+    const wizard = document.getElementById('wizardOverlay');
+    if(wizard && wizard.classList.contains('open')) {
+      dismissWizard();
+      history.pushState({ appShell: true }, '', location.href);
+      return;
+    }
+
+    // Kiosk mode — back should do nothing except show toast
+    if(typeof kioskActive !== 'undefined' && kioskActive) {
+      showToast('🔒 Hold the lock icon 3 seconds to exit kiosk mode');
+      history.pushState({ appShell: true }, '', location.href);
+      return;
+    }
+
+    // No modal open — show exit confirmation
+    const now = Date.now();
+    if(now - lastBackTime < 2500) {
+      // Second back within 2.5s — actually exit
+      history.back();
+      return;
+    }
+    lastBackTime = now;
+    showToast('Tap back again to exit the app');
+    // Re-push so we can catch the next back too
+    history.pushState({ appShell: true }, '', location.href);
+  });
+})();
+
 // ── SHORTCUT / DEEP LINK HANDLER ───────────────────────────
-// Handles ?mode=casual and ?mode=theater from PWA shortcuts
 (function handleDeepLink() {
   const params = new URLSearchParams(window.location.search);
   const mode = params.get('mode');
   if(mode && ['casual','theater','library','stream'].includes(mode)) {
-    // Remove param from URL without reload
     window.history.replaceState({}, '', window.location.pathname);
-    // Activate mode after app initialises (slight delay for DOM)
     window.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => activateMode(mode), 300);
     });
