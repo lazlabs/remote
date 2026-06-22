@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#0C0C12"/>
+  <!-- Outer ring -->
+  <circle cx="256" cy="220" r="120" fill="none" stroke="#D4AA44" stroke-width="16" opacity="0.25"/>
+  <!-- Play button -->
+  <circle cx="256" cy="220" r="90" fill="#D4AA44" opacity="0.12"/>
+  <polygon points="228,178 228,262 318,220" fill="#D4AA44"/>
+  <!-- Bottom label bar -->
+  <rect x="136" y="364" width="240" height="16" rx="8" fill="#D4AA44" opacity="0.5"/>
+  <rect x="176" y="392" width="160" height="12" rx="6" fill="#D4AA44" opacity="0.25"/>
+</svg>
