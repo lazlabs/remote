@@ -29,6 +29,7 @@
     media-src 'self' blob:;
   ">
 <title>Movie Room</title>
+<link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1481,6 +1482,154 @@ body.kiosk-active .kiosk-return-overlay.show{display:flex}
 .kiosk-pin-field.show{max-height:200px;opacity:1}
 .kiosk-pin-hint{font-size:11.5px;color:var(--text-2);line-height:1.5}
 
+
+/* ═══════════════════════════════════════════════
+   CONTEXTUAL HELP MODAL
+═══════════════════════════════════════════════ */
+/* inline ? buttons next to labels */
+.help-trigger{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--surface-md);border:1px solid var(--border);
+  color:var(--text-3);font-size:10px;font-weight:700;
+  cursor:pointer;vertical-align:middle;margin-left:6px;
+  transition:background .15s,color .15s,border-color .15s;
+  flex-shrink:0;line-height:1;
+}
+.help-trigger:hover,.help-trigger:active{
+  background:var(--gold-dim);border-color:var(--gold);color:var(--gold);
+}
+
+/* ctx modal — slides up like other sheets */
+.ctx-modal-overlay{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,0.72);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  display:flex;align-items:flex-end;
+  opacity:0;pointer-events:none;
+  transition:opacity .3s;
+}
+.ctx-modal-overlay.open{opacity:1;pointer-events:all}
+.ctx-modal-sheet{
+  width:100%;
+  background:#13131E;
+  border:1px solid var(--border-hi);border-bottom:none;
+  border-radius:24px 24px 0 0;
+  transform:translateY(50px);
+  transition:transform .38s cubic-bezier(.34,1.1,.64,1);
+  max-height:90vh;display:flex;flex-direction:column;
+}
+.ctx-modal-overlay.open .ctx-modal-sheet{transform:translateY(0)}
+
+.ctx-modal-handle{
+  width:36px;height:4px;border-radius:2px;
+  background:rgba(255,255,255,0.15);
+  margin:14px auto 0;flex-shrink:0;
+}
+.ctx-modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 22px 12px;flex-shrink:0;
+}
+.ctx-modal-title{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:19px;font-weight:700;letter-spacing:-0.02em;
+}
+
+/* topic tabs */
+.ctx-tabs{
+  display:flex;gap:0;overflow-x:auto;scrollbar-width:none;
+  padding:0 22px;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.ctx-tabs::-webkit-scrollbar{display:none}
+.ctx-tab{
+  padding:9px 14px 10px;font-size:12.5px;font-weight:500;
+  color:var(--text-3);cursor:pointer;white-space:nowrap;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:color .2s,border-color .2s;
+  background:none;border-top:none;border-left:none;border-right:none;
+}
+.ctx-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.ctx-tab:active{color:var(--text-2)}
+
+/* scrollable body */
+.ctx-modal-body{
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:20px 22px calc(28px + var(--safe-b));
+  flex:1;min-height:0;
+}
+
+/* panels */
+.ctx-panel{display:none}
+.ctx-panel.active{display:block}
+
+/* step rows */
+.ctx-step{
+  display:flex;gap:14px;margin-bottom:18px;align-items:flex-start;
+}
+.ctx-step-num{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--gold-dim);border:1.5px solid var(--gold);
+  color:var(--gold);font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:1px;
+}
+.ctx-step-body{flex:1;min-width:0}
+.ctx-step-title{
+  font-size:13.5px;font-weight:600;color:var(--text-1);
+  margin-bottom:4px;line-height:1.3;
+}
+.ctx-step-desc{font-size:12.5px;color:var(--text-2);line-height:1.6}
+.ctx-step-desc strong{color:var(--text-1);font-weight:600}
+.ctx-step-desc code{
+  font-family:'DM Mono',monospace;font-size:11.5px;
+  background:var(--surface-md);padding:1px 6px;border-radius:4px;
+  color:var(--gold);border:1px solid var(--border);
+}
+
+/* callout boxes */
+.ctx-callout{
+  border-radius:var(--r-md);padding:12px 14px;
+  margin:14px 0;font-size:12.5px;line-height:1.6;
+}
+.ctx-callout.info{
+  background:rgba(30,79,168,0.12);border:1px solid rgba(30,79,168,0.3);
+  color:#9ABAFF;
+}
+.ctx-callout.warn{
+  background:rgba(212,170,68,0.1);border:1px solid rgba(212,170,68,0.3);
+  color:var(--gold);
+}
+.ctx-callout.tip{
+  background:rgba(61,204,122,0.08);border:1px solid rgba(61,204,122,0.25);
+  color:var(--green);
+}
+.ctx-callout strong{font-weight:600}
+
+/* nav path display */
+.ctx-path{
+  display:flex;flex-wrap:wrap;align-items:center;gap:4px;
+  margin:8px 0;
+}
+.ctx-path-seg{
+  font-family:'DM Mono',monospace;font-size:11px;
+  background:var(--surface-md);border:1px solid var(--border);
+  color:var(--text-1);padding:3px 8px;border-radius:6px;
+}
+.ctx-path-arrow{color:var(--text-3);font-size:11px}
+
+/* section divider inside panel */
+.ctx-section-title{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:15px;font-weight:700;letter-spacing:-0.01em;
+  color:var(--text-1);margin:20px 0 12px;
+  border-top:1px solid var(--border);padding-top:16px;
+}
+.ctx-section-title:first-child{border-top:none;padding-top:0;margin-top:0}
+
+@media(min-width:768px){
+  .ctx-modal-sheet{max-width:580px;margin:0 auto}
+}
+
 /* ═══════════════════════════════════════════════
    SPINNER / PULSE
 ═══════════════════════════════════════════════ */
@@ -2318,8 +2467,8 @@ body.kiosk-active .kiosk-return-overlay.show{display:flex}
 
         <!-- Webhooks collapsible -->
         <div class="sub-toggle" onclick="toggleSub('webhookFields','webhookChevron')" role="button">
-          <span class="sub-toggle-label">Webhooks</span>
-          <span class="sub-toggle-chevron" id="webhookChevron">▼</span>
+          <span class="sub-toggle-label">Webhooks <button class="help-trigger" onclick="event.stopPropagation();openCtxHelp('webhook')" aria-label="Help with webhooks">?</button></span>
+          <span class="sub-toggle-chevron open" id="webhookChevron">▼</span>
         </div>
         <div class="sub-fields open" id="webhookFields">
           <div class="field">
@@ -2338,7 +2487,7 @@ body.kiosk-active .kiosk-return-overlay.show{display:flex}
 
         <!-- Entities collapsible -->
         <div class="sub-toggle" onclick="toggleSub('entityFields','entityChevron')" role="button">
-          <span class="sub-toggle-label">Entities</span>
+          <span class="sub-toggle-label">Entities <button class="help-trigger" onclick="event.stopPropagation();openCtxHelp('entities')" aria-label="Help finding entity IDs">?</button></span>
           <span class="sub-toggle-chevron open" id="entityChevron">▼</span>
         </div>
         <div class="sub-fields open" id="entityFields">
@@ -2458,6 +2607,66 @@ body.kiosk-active .kiosk-return-overlay.show{display:flex}
         <div style="font-size:12px;color:var(--text-3);line-height:1.55;margin-top:4px">
           For a truly locked device, also enable <strong>iOS Guided Access</strong> (Settings → Accessibility → Guided Access) or <strong>Android Screen Pinning</strong> (Settings → Security → Screen Pinning) after installing this app to your home screen.
         </div>
+      </div>
+
+      <!-- DOWNLOADS -->
+      <div class="manual-toggle" onclick="toggleSub('downloadFields','downloadChevron')" role="button" style="margin-top:8px">
+        <span class="manual-toggle-label">Downloads</span>
+        <span class="sub-toggle-chevron" id="downloadChevron">▼</span>
+      </div>
+      <div class="sub-fields open" id="downloadFields">
+        <div style="font-size:12.5px;color:var(--text-2);line-height:1.6;margin-bottom:14px">
+          Everything you need is embedded in this app — download companion files directly without visiting the repo.
+        </div>
+
+        <!-- PC Agent -->
+        <div class="gear-item" style="margin-bottom:10px">
+          <div class="gear-icon">🤖</div>
+          <div class="gear-info">
+            <div class="gear-name">PC Agent</div>
+            <div class="gear-detail">Lets the remote launch apps &amp; send keystrokes to your gaming PC</div>
+          </div>
+          <button class="ping-btn" onclick="downloadAllAgentFiles()" style="height:38px;padding:0 12px;white-space:nowrap;flex-shrink:0">
+            ↓ Download
+          </button>
+        </div>
+
+        <!-- Individual files -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          <button class="io-btn" onclick="downloadEmbeddedFile('pc-agent.py')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            pc-agent.py
+          </button>
+          <button class="io-btn" onclick="downloadEmbeddedFile('install-agent.bat')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            install-agent.bat
+          </button>
+        </div>
+
+        <!-- HA Automations -->
+        <div class="gear-item" style="margin-bottom:10px">
+          <div class="gear-icon">🏠</div>
+          <div class="gear-info">
+            <div class="gear-name">HA Automations</div>
+            <div class="gear-detail">Ready-to-paste YAML for all four activity modes</div>
+          </div>
+          <button class="ping-btn" onclick="downloadHaYaml()" style="height:38px;padding:0 12px;white-space:nowrap;flex-shrink:0">
+            ↓ Download
+          </button>
+        </div>
+
+        <!-- Config backup -->
+        <div class="gear-item">
+          <div class="gear-icon">💾</div>
+          <div class="gear-info">
+            <div class="gear-name">App Config Backup</div>
+            <div class="gear-detail">Export all your settings as JSON</div>
+          </div>
+          <button class="ping-btn" onclick="exportConfig()" style="height:38px;padding:0 12px;white-space:nowrap;flex-shrink:0">
+            ↓ Export
+          </button>
+        </div>
+
       </div>
 
       <!-- FOOTER -->
@@ -2643,38 +2852,57 @@ body.kiosk-active .kiosk-return-overlay.show{display:flex}
       <div class="wizard-panel active" id="wpanel0">
         <div class="wizard-eyebrow">Step 1 of 3</div>
         <div class="wizard-panel-title">Connect Home Assistant</div>
-        <div class="wizard-panel-desc">Enter the local URL where your Home Assistant is running. If you're on HTTPS you can use the OAuth quick-connect; otherwise enter a token manually below.</div>
+        <div class="wizard-panel-desc">Enter the URL you use to open Home Assistant in a browser on your home network. Not sure where to find it? Tap the help button.</div>
         <div class="wizard-field">
-          <label>Home Assistant URL</label>
+          <label>Home Assistant URL <button class="help-trigger" onclick="openCtxHelp('url')" aria-label="Help finding your HA URL">?</button></label>
           <input type="url" id="wzHaUrl" placeholder="http://homeassistant.local:8123" autocomplete="off">
+        </div>
+        <div class="ctx-callout info" style="margin-bottom:12px">
+          <strong>Already connected?</strong> If HA opened when you set up the app, your URL is whatever was in your browser's address bar — usually <code>http://homeassistant.local:8123</code> or an IP like <code>http://192.168.1.X:8123</code>.
+        </div>
+        <div class="wizard-field">
+          <label>Long-Lived Access Token <button class="help-trigger" onclick="openCtxHelp('token')" aria-label="Help creating a token">?</button></label>
+          <input type="password" id="wzToken" placeholder="Paste your HA token here" autocomplete="off">
         </div>
         <div class="wizard-connect-status" id="wzConnectStatus" style="display:none"></div>
         <div class="wizard-nav">
-          <button class="wizard-next" onclick="wizardStep0Next()">Connect & Continue →</button>
+          <button class="wizard-next" onclick="wizardStep0Next()">Test &amp; Continue →</button>
         </div>
         <p style="text-align:center;font-size:12px;color:var(--text-3);margin-top:14px">
-          This opens Home Assistant in your browser to approve access.
+          The token lets this app talk to your HA securely. Tap the <strong>?</strong> next to the token field for step-by-step instructions.
         </p>
       </div>
 
       <!-- Step 1: Webhook IDs -->
       <div class="wizard-panel" id="wpanel1">
         <div class="wizard-eyebrow">Step 2 of 3</div>
-        <div class="wizard-panel-title">Add your webhook IDs</div>
-        <div class="wizard-panel-desc">Create two automations in HA with Webhook triggers — one for Casual TV, one for Movie Night. Paste the webhook IDs below.</div>
+        <div class="wizard-panel-title">Create your automations</div>
+        <div class="wizard-panel-desc">You need to create two automations in Home Assistant — one that turns everything on for Casual TV, one for Movie Night. Each automation gets a Webhook ID that you paste here.</div>
+
+        <div class="ctx-callout warn" style="margin-bottom:14px">
+          <strong>Never done this before?</strong> Tap <strong>Show me how →</strong> below for a complete walkthrough with exact clicks. It takes about 5 minutes.
+        </div>
+
+        <button class="wizard-back-btn" style="width:100%;margin-bottom:16px;height:46px;border-radius:var(--r-md);background:var(--gold-dim);border-color:var(--gold);color:var(--gold);font-size:13.5px;font-weight:600" onclick="openCtxHelp('webhook')">
+          📖 Show me how to create automations →
+        </button>
+
         <div class="wizard-field">
-          <label>Casual TV Webhook ID</label>
-          <input type="text" id="wzCasualWH" placeholder="casual_tv_on" autocomplete="off">
+          <label>Casual TV Webhook ID <button class="help-trigger" onclick="openCtxHelp('webhook')" aria-label="Help with webhooks">?</button></label>
+          <input type="text" id="wzCasualWH" placeholder="casual_tv_on" autocomplete="off" autocapitalize="none">
         </div>
         <div class="wizard-field">
-          <label>Movie Night Webhook ID</label>
-          <input type="text" id="wzTheaterWH" placeholder="movie_night_on" autocomplete="off">
+          <label>Movie Night Webhook ID <button class="help-trigger" onclick="openCtxHelp('webhook')" aria-label="Help with webhooks">?</button></label>
+          <input type="text" id="wzTheaterWH" placeholder="movie_night_on" autocomplete="off" autocapitalize="none">
         </div>
         <div class="wizard-field">
-          <label>Power Off Webhook ID (optional)</label>
-          <input type="text" id="wzPowerOffWH" placeholder="all_off" autocomplete="off">
+          <label>Power Off Webhook ID <span style="color:var(--text-3);font-size:11px">(optional)</span></label>
+          <input type="text" id="wzPowerOffWH" placeholder="all_off" autocomplete="off" autocapitalize="none">
         </div>
-        <div class="wizard-nav">
+        <div class="ctx-callout tip">
+          <strong>Tip:</strong> The Webhook ID is the text you type when creating the automation — not a code HA generates. Use something simple with no spaces, like <code>casual_tv_on</code>.
+        </div>
+        <div class="wizard-nav" style="margin-top:14px">
           <button class="wizard-back-btn" onclick="goWizardStep(0)">← Back</button>
           <button class="wizard-next" onclick="wizardStep1Next()">Next →</button>
         </div>
@@ -2683,29 +2911,37 @@ body.kiosk-active .kiosk-return-overlay.show{display:flex}
       <!-- Step 2: Entity IDs -->
       <div class="wizard-panel" id="wpanel2">
         <div class="wizard-eyebrow">Step 3 of 3</div>
-        <div class="wizard-panel-title">Confirm device entities</div>
-        <div class="wizard-panel-desc">These are pre-filled with common defaults. Update any that differ in your HA setup.</div>
+        <div class="wizard-panel-title">Find your device names</div>
+        <div class="wizard-panel-desc">Each device in Home Assistant has a unique ID. The defaults below match the most common names — they may already work. If a device doesn't respond, tap <strong>?</strong> to find its exact ID.</div>
+
+        <button class="wizard-back-btn" style="width:100%;margin-bottom:16px;height:46px;border-radius:var(--r-md);background:rgba(61,204,122,0.08);border-color:rgba(61,204,122,0.3);color:var(--green);font-size:13.5px;font-weight:600" onclick="openCtxHelp('entities')">
+          🔍 How to find my device IDs →
+        </button>
+
         <div class="wizard-field">
-          <label>Sonos Entity</label>
-          <input type="text" id="wzSonos" value="media_player.sonos_soundbar" autocomplete="off">
+          <label>Sonos Soundbar <button class="help-trigger" onclick="openCtxHelp('entities')" aria-label="Help finding entity IDs">?</button></label>
+          <input type="text" id="wzSonos" value="media_player.sonos_soundbar" autocomplete="off" autocapitalize="none">
         </div>
         <div class="wizard-field">
-          <label>Yamaha Entity</label>
-          <input type="text" id="wzYamaha" value="media_player.yamaha_receiver" autocomplete="off">
+          <label>Yamaha Receiver <button class="help-trigger" onclick="openCtxHelp('entities')" aria-label="Help finding entity IDs">?</button></label>
+          <input type="text" id="wzYamaha" value="media_player.yamaha_receiver" autocomplete="off" autocapitalize="none">
         </div>
         <div class="wizard-field">
-          <label>TV Entity</label>
-          <input type="text" id="wzTV" value="media_player.tcl_tv" autocomplete="off">
+          <label>TCL TV <button class="help-trigger" onclick="openCtxHelp('entities')" aria-label="Help finding entity IDs">?</button></label>
+          <input type="text" id="wzTV" value="media_player.tcl_tv" autocomplete="off" autocapitalize="none">
         </div>
         <div class="wizard-field">
-          <label>Fire TV Entity</label>
-          <input type="text" id="wzFireTV" value="media_player.fire_tv" autocomplete="off">
+          <label>Fire TV <button class="help-trigger" onclick="openCtxHelp('entities')" aria-label="Help finding entity IDs">?</button></label>
+          <input type="text" id="wzFireTV" value="media_player.fire_tv" autocomplete="off" autocapitalize="none">
         </div>
         <div class="wizard-field">
-          <label>Lights Entity</label>
-          <input type="text" id="wzLights" value="light.movie_room" autocomplete="off">
+          <label>Room Lights <button class="help-trigger" onclick="openCtxHelp('entities')" aria-label="Help finding entity IDs">?</button></label>
+          <input type="text" id="wzLights" value="light.movie_room" autocomplete="off" autocapitalize="none">
         </div>
-        <div class="wizard-nav">
+        <div class="ctx-callout info" style="margin-top:8px">
+          <strong>Not sure?</strong> Leave the defaults for now and tap Finish. You can always update these later in Settings if a device doesn't respond.
+        </div>
+        <div class="wizard-nav" style="margin-top:14px">
           <button class="wizard-back-btn" onclick="goWizardStep(1)">← Back</button>
           <button class="wizard-next" onclick="wizardFinish()">Finish Setup ✓</button>
         </div>
@@ -2810,6 +3046,343 @@ body.kiosk-active .kiosk-return-overlay.show{display:flex}
   </div>
   <button class="kiosk-pin-cancel" onclick="kioskCancelPin()">Cancel</button>
 </div>
+
+<!-- ═══════════════════════════════════════════
+     CONTEXTUAL HELP MODAL
+═══════════════════════════════════════════ -->
+<div class="ctx-modal-overlay" id="ctxHelpOverlay">
+  <div class="ctx-modal-sheet">
+    <div class="ctx-modal-handle"></div>
+    <div class="ctx-modal-header">
+      <div class="ctx-modal-title" id="ctxHelpTitle">Setup Help</div>
+      <button class="modal-close" onclick="closeCtxHelp()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- topic tabs -->
+    <div class="ctx-tabs" id="ctxTabs">
+      <button class="ctx-tab active" data-topic="url"     onclick="switchCtxTopic('url',this)">HA URL</button>
+      <button class="ctx-tab"        data-topic="token"   onclick="switchCtxTopic('token',this)">Token</button>
+      <button class="ctx-tab"        data-topic="webhook" onclick="switchCtxTopic('webhook',this)">Webhooks</button>
+      <button class="ctx-tab"        data-topic="entities" onclick="switchCtxTopic('entities',this)">Entities</button>
+      <button class="ctx-tab"        data-topic="kodi"    onclick="switchCtxTopic('kodi',this)">Kodi</button>
+      <button class="ctx-tab"        data-topic="pcagent" onclick="switchCtxTopic('pcagent',this)">PC Agent</button>
+    </div>
+
+    <div class="ctx-modal-body">
+
+      <!-- ══ URL ══ -->
+      <div class="ctx-panel active" id="ctx-url">
+        <div class="ctx-section-title">Finding your Home Assistant URL</div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">1</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Open Home Assistant on the same network</div>
+            <div class="ctx-step-desc">On any device connected to your home Wi-Fi, open a browser and try typing: <code>homeassistant.local:8123</code></div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">2</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">If that doesn't load, find the IP address</div>
+            <div class="ctx-step-desc">Go to your HA dashboard → <strong>Settings</strong> → <strong>System</strong> → <strong>Network</strong>. You'll see an IP address like <code>192.168.1.45</code>. Your URL is then <code>http://192.168.1.45:8123</code></div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">3</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Copy that URL into the field</div>
+            <div class="ctx-step-desc">Include <code>http://</code> at the start and <code>:8123</code> at the end. No trailing slash.</div>
+          </div>
+        </div>
+        <div class="ctx-callout tip">
+          <strong>Using Nabu Casa?</strong> If you pay for Home Assistant Cloud, your URL looks like <code>https://XXXXX.ui.nabu.casa</code> — use that instead. It works over the internet too.
+        </div>
+        <div class="ctx-callout info">
+          <strong>This app only works on your home Wi-Fi</strong> (or VPN) unless you're using Nabu Casa or a remote access setup. That's normal and keeps your home system secure.
+        </div>
+      </div>
+
+      <!-- ══ TOKEN ══ -->
+      <div class="ctx-panel" id="ctx-token">
+        <div class="ctx-section-title">Creating a Long-Lived Access Token</div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">1</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Open your HA profile</div>
+            <div class="ctx-step-desc">In Home Assistant, click your <strong>name or avatar</strong> in the very bottom-left of the sidebar. This opens your Profile page.</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">2</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Scroll to the bottom</div>
+            <div class="ctx-step-desc">Scroll all the way down until you see a section called <strong>Long-Lived Access Tokens</strong>.</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">3</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Create a token</div>
+            <div class="ctx-step-desc">Click <strong>Create Token</strong>. Type a name like <code>Movie Room Remote</code> and click OK.</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">4</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Copy it immediately</div>
+            <div class="ctx-step-desc">HA shows the token <strong>once only</strong>. Copy the whole thing — it's a long string of letters and numbers. Paste it into the Token field in this app.</div>
+          </div>
+        </div>
+        <div class="ctx-callout warn">
+          <strong>Important:</strong> If you close the HA dialog without copying, the token is gone and you'll need to create a new one. That's fine — just delete the old one and make another.
+        </div>
+        <div class="ctx-callout info">
+          The token is like a password for this app. Keep this app's config backed up (Settings → Export Config) so you don't have to regenerate it.
+        </div>
+      </div>
+
+      <!-- ══ WEBHOOKS ══ -->
+      <div class="ctx-panel" id="ctx-webhook">
+        <div class="ctx-section-title">Download ready-made automation YAML</div>
+        <div style="margin-bottom:16px">
+          <button class="save-btn" onclick="downloadHaYaml()" style="height:46px;font-size:13px;width:100%">
+            ↓ Download ha-automations.yaml
+          </button>
+        </div>
+        <div class="ctx-callout tip" style="margin-bottom:16px">
+          The YAML file has all four automations pre-written. In HA go to <strong>Settings → Automations → ⋮ menu → Import from YAML</strong> and paste each block. You only need to update the entity IDs at the top of each block to match your devices.
+        </div>
+
+        <div class="ctx-section-title">What is a webhook?</div>
+        <div class="ctx-step-desc" style="margin-bottom:16px;font-size:13px;color:var(--text-2);line-height:1.65">
+          A webhook is a web address that triggers an action when visited. When you tap <strong>Casual TV</strong> in this app, it sends a signal to that address. Home Assistant listens for that signal and runs whatever actions you set up — turning on the TV, switching inputs, adjusting audio.
+        </div>
+
+        <div class="ctx-section-title">Create your first automation — Casual TV</div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">1</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Go to Automations</div>
+            <div class="ctx-step-desc">In HA: <strong>Settings</strong> → <strong>Automations &amp; Scenes</strong> → <strong>Create Automation</strong> → <strong>Create new automation</strong></div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">2</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Add a Webhook trigger</div>
+            <div class="ctx-step-desc">Click <strong>Add Trigger</strong> → search for <strong>Webhook</strong> → select it. You'll see a field called <strong>Webhook ID</strong>. Type something simple with no spaces: <code>casual_tv_on</code></div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">3</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Add your actions</div>
+            <div class="ctx-step-desc">Click <strong>Add Action</strong> for each thing you want to happen:
+              <br>• <strong>Call service: media_player.turn_on</strong> → pick your TV
+              <br>• <strong>Call service: media_player.select_source</strong> → TV → source: HDMI 1
+              <br>• <strong>Call service: media_player.turn_off</strong> → pick your Yamaha
+            </div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">4</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Save and copy the Webhook ID</div>
+            <div class="ctx-step-desc">Click <strong>Save</strong> in the top right. The Webhook ID you typed (<code>casual_tv_on</code>) is what you paste into this app. That's it.</div>
+          </div>
+        </div>
+
+        <div class="ctx-section-title">Create Movie Night automation</div>
+        <div class="ctx-step-desc" style="font-size:13px;color:var(--text-2);line-height:1.65;margin-bottom:12px">
+          Repeat the same steps with Webhook ID <code>movie_night_on</code>. Actions for Movie Night:
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">A</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Turn on TV and switch to HDMI 2</div>
+            <div class="ctx-step-desc"><strong>media_player.turn_on</strong> → TV<br><strong>media_player.select_source</strong> → TV → HDMI 2</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">B</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Turn on the Yamaha receiver</div>
+            <div class="ctx-step-desc"><strong>media_player.turn_on</strong> → Yamaha</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">C</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Dim the lights</div>
+            <div class="ctx-step-desc"><strong>light.turn_on</strong> → your light entity → Brightness: <code>10</code>%</div>
+          </div>
+        </div>
+        <div class="ctx-callout tip">
+          <strong>Optional Power Off webhook:</strong> Create a third automation with Webhook ID <code>all_off</code> and add turn_off actions for the TV, Yamaha, and Sonos. Tap Power Off in the app to trigger it.
+        </div>
+      </div>
+
+      <!-- ══ ENTITIES ══ -->
+      <div class="ctx-panel" id="ctx-entities">
+        <div class="ctx-section-title">What is an entity ID?</div>
+        <div class="ctx-step-desc" style="font-size:13px;color:var(--text-2);line-height:1.65;margin-bottom:16px">
+          Every device in Home Assistant has a unique name called an entity ID. It always looks like <code>type.device_name</code> — for example <code>media_player.sonos_soundbar</code> or <code>light.living_room</code>. This app needs the exact ID so it can control the right device.
+        </div>
+
+        <div class="ctx-section-title">How to find your entity IDs</div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">1</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Open Developer Tools</div>
+            <div class="ctx-step-desc">In HA, click <strong>Developer Tools</strong> in the left sidebar (the icon looks like <code>&lt;/&gt;</code>). If you don't see it, go to <strong>Settings</strong> → <strong>System</strong> → enable <strong>Developer mode</strong> first.</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">2</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Click the States tab</div>
+            <div class="ctx-step-desc">You'll see a searchable list of every device. In the search box type the name of your device, like <code>sonos</code> or <code>yamaha</code>.</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">3</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Copy the entity ID from the left column</div>
+            <div class="ctx-step-desc">The first column shows the entity ID. It will look like <code>media_player.sonos_beam</code> or <code>media_player.yamaha_rx_v685</code>. Copy it exactly, including the prefix (<code>media_player.</code>, <code>light.</code> etc).</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">4</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Paste it into this app</div>
+            <div class="ctx-step-desc">Replace the placeholder in Settings or the wizard field with the exact ID you copied.</div>
+          </div>
+        </div>
+
+        <div class="ctx-callout info">
+          <strong>Common entity types you need:</strong><br>
+          • TV → <code>media_player.your_tv_name</code><br>
+          • Sonos → <code>media_player.sonos_name</code><br>
+          • Yamaha → <code>media_player.yamaha_name</code><br>
+          • Fire TV → <code>media_player.fire_tv_name</code><br>
+          • Lights → <code>light.room_name</code>
+        </div>
+        <div class="ctx-callout tip">
+          <strong>Can't find a device?</strong> Make sure it's powered on when you search — some devices only appear in HA when they're active. Also check that the integration (Sonos, Fire TV etc) is installed in HA Settings → Integrations.
+        </div>
+      </div>
+
+      <!-- ══ KODI ══ -->
+      <div class="ctx-panel" id="ctx-kodi">
+        <div class="ctx-section-title">Enable Kodi's remote control</div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">1</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Open Kodi on your PC</div>
+            <div class="ctx-step-desc">Launch Kodi. Go to <strong>Settings</strong> (the gear icon on the home screen).</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">2</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Navigate to Services</div>
+            <div class="ctx-step-desc">
+              <div class="ctx-path">
+                <span class="ctx-path-seg">Settings</span><span class="ctx-path-arrow">→</span>
+                <span class="ctx-path-seg">Services</span><span class="ctx-path-arrow">→</span>
+                <span class="ctx-path-seg">Control</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">3</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Enable HTTP control</div>
+            <div class="ctx-step-desc">Turn on <strong>Allow remote control via HTTP</strong>. Set the port to <code>8080</code>. Username and password are optional — leave blank for easier setup on a home network.</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">4</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Find your PC's local IP</div>
+            <div class="ctx-step-desc">On the PC: press <strong>Win + R</strong>, type <code>cmd</code>, press Enter. In the black window type <code>ipconfig</code> and press Enter. Look for <strong>IPv4 Address</strong> — it'll be something like <code>192.168.1.45</code>.</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">5</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Enter the URL in this app</div>
+            <div class="ctx-step-desc">In Settings → Kodi &amp; PC Agent, set Kodi URL to: <code>http://192.168.1.45:8080/jsonrpc</code> (replace with your actual IP). Tap <strong>Ping Kodi</strong> to test.</div>
+          </div>
+        </div>
+        <div class="ctx-callout tip">
+          <strong>Library scan:</strong> After setting up Kodi, point it at your movie folder: Kodi → Settings → Media → Library → Add Videos → browse to your external drive. Once scanned, movie posters and info appear automatically in this app's Now Playing bar.
+        </div>
+      </div>
+
+      <!-- ══ PC AGENT ══ -->
+      <div class="ctx-panel" id="ctx-pcagent">
+        <div class="ctx-section-title">Download the PC Agent files</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px">
+          <button class="save-btn" onclick="downloadEmbeddedFile('pc-agent.py')" style="height:46px;font-size:13px">
+            ↓ pc-agent.py
+          </button>
+          <button class="save-btn" onclick="downloadEmbeddedFile('install-agent.bat')" style="height:46px;font-size:13px;background:var(--surface-md);color:var(--text-1);border:1px solid var(--border)">
+            ↓ install-agent.bat
+          </button>
+        </div>
+        <div class="ctx-callout tip" style="margin-bottom:16px">
+          <strong>Save both files to the same folder</strong> on your PC, e.g. <code>C:\MovieRoom\</code>. Then follow the steps below.
+        </div>
+
+        <div class="ctx-section-title">What is the PC Agent?</div>
+        <div class="ctx-step-desc" style="font-size:13px;color:var(--text-2);line-height:1.65;margin-bottom:16px">
+          The PC Agent is a tiny program that runs on your gaming PC in the background. It lets this app launch programs (like Kodi or Chrome) and send keystrokes to the PC — like a remote control for Windows. It's a single Python file that starts automatically when you log in.
+        </div>
+
+        <div class="ctx-section-title">Setup (one time, 5 minutes)</div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">1</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Install Python on your PC</div>
+            <div class="ctx-step-desc">Go to <code>python.org/downloads</code> and download Python 3. During install, check the box that says <strong>Add Python to PATH</strong> — important!</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">2</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Copy the agent files to your PC</div>
+            <div class="ctx-step-desc">Download <code>pc-agent.py</code> and <code>install-agent.bat</code> from this project (they're included in the download). Put them in a folder like <code>C:\MovieRoom\</code>.</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">3</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Run the installer</div>
+            <div class="ctx-step-desc">Right-click <code>install-agent.bat</code> → <strong>Run as administrator</strong>. It installs a dependency and registers the agent to start automatically when you log in.</div>
+          </div>
+        </div>
+        <div class="ctx-step">
+          <div class="ctx-step-num">4</div>
+          <div class="ctx-step-body">
+            <div class="ctx-step-title">Find your PC's IP and enter it here</div>
+            <div class="ctx-step-desc">Press <strong>Win + R</strong> → type <code>cmd</code> → type <code>ipconfig</code>. Copy the IPv4 address. In Settings → Kodi &amp; PC Agent, set PC Agent URL to <code>http://192.168.1.X:9876</code>. Tap <strong>Ping Agent</strong> to confirm.</div>
+          </div>
+        </div>
+        <div class="ctx-callout tip">
+          <strong>Customize app shortcuts:</strong> Open <code>pc-agent.py</code> in Notepad and edit the <code>APP_MAP</code> section near the top to point to wherever your apps are installed.
+        </div>
+        <div class="ctx-callout warn">
+          <strong>Security note:</strong> The PC Agent only accepts connections from your local network. Don't forward port 9876 through your router to the internet.
+        </div>
+      </div>
+
+    </div><!-- /ctx-modal-body -->
+  </div><!-- /ctx-modal-sheet -->
+</div><!-- /ctx-modal-overlay -->
 
 <!-- TOAST -->
 <div class="toast" id="toast">
@@ -3994,25 +4567,53 @@ function goWizardStep(n) {
 }
 
 function wizardStep0Next() {
-  const url = document.getElementById('wzHaUrl').value.trim().replace(/\/$/,'');
+  const url   = document.getElementById('wzHaUrl').value.trim().replace(/\/$/,'');
+  const token = document.getElementById('wzToken')?.value.trim() || '';
   if(!url || !url.startsWith('http')) {
-    showToast('⚠️ Enter a valid HA URL', 'error'); return;
+    showToast('⚠️ Enter a valid HA URL first', 'error'); return;
   }
+  // Save URL and token immediately
   localStorage.setItem('mr_haUrl', url);
-  // populate main settings field too
-  const mainField = document.getElementById('cfgHaUrl');
-  if(mainField) mainField.value = url;
-  // Try OAuth if HTTPS, else just advance
-  if(window.location.protocol === 'https:') {
-    // store wizard state so after OAuth redirect we land on step 1
-    localStorage.setItem('mr_wizardStep', '1');
-    // reuse existing OAuth flow
-    document.getElementById('cfgHaUrl').value = url;
-    startOAuth();
-  } else {
-    showToast('HTTP detected — paste token manually after this wizard');
-    goWizardStep(1);
-  }
+  if(token) localStorage.setItem('mr_haToken', token);
+  // populate main settings fields too
+  const mainUrl = document.getElementById('cfgHaUrl');
+  const mainTok = document.getElementById('cfgToken');
+  if(mainUrl) mainUrl.value = url;
+  if(mainTok && token) mainTok.value = token;
+
+  // Test connection before advancing
+  const statusEl = document.getElementById('wzConnectStatus');
+  statusEl.style.display = 'flex';
+  statusEl.className = 'wizard-connect-status';
+  statusEl.textContent = '⏳ Testing connection…';
+
+  fetch(`${url}/api/`, {
+    headers: token ? {'Authorization': `Bearer ${token}`} : {},
+    signal: AbortSignal.timeout(6000),
+  }).then(r => {
+    if(r.ok) {
+      statusEl.className = 'wizard-connect-status ok';
+      statusEl.textContent = '✓ Connected to Home Assistant!';
+      localStorage.setItem('mr_wizardDone_step0', '1');
+      setTimeout(() => goWizardStep(1), 800);
+    } else if(r.status === 401) {
+      statusEl.className = 'wizard-connect-status fail';
+      statusEl.textContent = '⚠️ Reached HA but token was rejected. Tap ? next to Token for help creating one.';
+    } else {
+      statusEl.className = 'wizard-connect-status fail';
+      statusEl.textContent = `⚠️ HA responded with HTTP ${r.status}`;
+    }
+  }).catch(e => {
+    const isHttps = location.protocol === 'https:';
+    const isHttp  = url.startsWith('http:');
+    if(isHttps && isHttp) {
+      statusEl.className = 'wizard-connect-status fail';
+      statusEl.innerHTML = '⚠️ <strong>Mixed content blocked.</strong> This app is on HTTPS but your HA URL is HTTP. Either enable HTTPS on HA, or open this app over HTTP. Tap ⚙ → Connection Diagnostics for details.';
+    } else {
+      statusEl.className = 'wizard-connect-status fail';
+      statusEl.textContent = `⚠️ Cannot reach HA: ${e.message}. Check the URL and that you're on the same Wi-Fi.`;
+    }
+  });
 }
 
 function wizardStep1Next() {
@@ -4339,6 +4940,559 @@ function openKioskSettings() {
   updateKioskToggleUI(kioskActive);
   const pinEl = document.getElementById('cfgKioskPin');
   if(pinEl) pinEl.value = localStorage.getItem(KIOSK_PIN_KEY) || '';
+}
+
+/* ═══════════════════════════════════════════
+   CONTEXTUAL HELP MODAL
+═══════════════════════════════════════════ */
+function openCtxHelp(topic) {
+  const overlay = document.getElementById('ctxHelpOverlay');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  switchCtxTopic(topic);
+}
+
+function closeCtxHelp() {
+  document.getElementById('ctxHelpOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function switchCtxTopic(topic, btn) {
+  // hide all panels
+  document.querySelectorAll('.ctx-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.ctx-tab').forEach(t => t.classList.remove('active'));
+  // show target
+  const panel = document.getElementById('ctx-' + topic);
+  if(panel) panel.classList.add('active');
+  // activate tab
+  if(btn) {
+    btn.classList.add('active');
+  } else {
+    const tab = document.querySelector(`.ctx-tab[data-topic="${topic}"]`);
+    if(tab) tab.classList.add('active');
+  }
+  // scroll body to top
+  const body = document.querySelector('.ctx-modal-body');
+  if(body) body.scrollTop = 0;
+}
+
+// close on overlay click
+document.getElementById('ctxHelpOverlay').addEventListener('click', e => {
+  if(e.target === document.getElementById('ctxHelpOverlay')) closeCtxHelp();
+});
+
+/* ═══════════════════════════════════════════
+   EMBEDDED FILE DOWNLOADS
+   PC agent files are embedded so users can
+   download them directly from the app without
+   needing the repo separately.
+═══════════════════════════════════════════ */
+const EMBEDDED_FILES = {
+  'pc-agent.py': `"""
+Movie Room Remote — PC Agent
+Runs as a tiny local HTTP server on the gaming PC.
+The theater remote POSTs to this to launch apps, send keystrokes, etc.
+
+Setup:
+  1. Install Python 3.x (already on most Windows machines)
+  2. pip install pyautogui   (for keyboard/mouse control)
+  3. Run:  python pc-agent.py
+     Or use install-agent.bat to register as a startup task.
+
+Default port: 9876
+Set PC_AGENT_PORT environment variable to override.
+"""
+
+import http.server
+import json
+import os
+import subprocess
+import sys
+import threading
+import time
+
+PORT = int(os.environ.get('PC_AGENT_PORT', 9876))
+
+# ── APP COMMANDS ────────────────────────────────────────────────────────────
+# Map command strings (sent from the remote) to what actually runs on Windows.
+# Customize these paths to match your PC setup.
+APP_MAP = {
+    'kodi':    r'C:\\Program Files\\Kodi\\Kodi.exe',
+    'chrome':  r'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'firefox': r'C:\\Program Files\\Mozilla Firefox\\firefox.exe',
+    'vlc':     r'C:\\Program Files\\VideoLAN\\VLC\\vlc.exe',
+    # Phone mirror apps — uncomment whichever you use:
+    # 'mirror':  r'C:\\Program Files\\scrcpy\\scrcpy.exe',          # scrcpy (Android)
+    # 'mirror':  r'C:\\Program Files\\ApowerMirror\\ApowerMirror.exe',
+    # 'mirror':  r'C:\\Program Files\\LonelyScreen\\LonelyScreen.exe',  # AirPlay receiver
+    'mirror':  r'C:\\Program Files\\scrcpy\\scrcpy.exe',
+    'steam':   r'C:\\Program Files (x86)\\Steam\\steam.exe',
+    'plex':    r'C:\\Program Files\\Plex\\Plex.exe',
+    'spotify': r'C:\\Users\\{}\\AppData\\Roaming\\Spotify\\Spotify.exe'.format(os.environ.get('USERNAME','')),
+}
+
+# ── KEYBOARD MAP (for key: commands from d-pad) ─────────────────────────────
+KEY_MAP = {
+    'UP':        'up',
+    'DOWN':      'down',
+    'LEFT':      'left',
+    'RIGHT':     'right',
+    'RETURN':    'enter',
+    'BACKSPACE': 'backspace',
+    'SUPER':     'win',
+    'F12':       'f12',
+    'ESCAPE':    'esc',
+    'SPACE':     'space',
+}
+
+
+class AgentHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, fmt, *args):
+        # Only log errors, not every request
+        if '4' in str(args[1] if len(args) > 1 else '') or '5' in str(args[1] if len(args) > 1 else ''):
+            print(f'[Agent] {fmt % args}')
+
+    def send_json(self, code, data):
+        body = json.dumps(data).encode()
+        self.send_response(code)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Length', len(body))
+        # Allow requests from the local network (the remote app)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+
+    def do_GET(self):
+        if self.path == '/ping':
+            self.send_json(200, {'status': 'ok', 'agent': 'movie-room-pc-agent', 'version': '1.0'})
+        else:
+            self.send_json(404, {'error': 'not found'})
+
+    def do_POST(self):
+        if self.path != '/run':
+            self.send_json(404, {'error': 'not found'})
+            return
+
+        length = int(self.headers.get('Content-Length', 0))
+        try:
+            body = json.loads(self.rfile.read(length))
+            command = body.get('command', '').strip()
+        except Exception:
+            self.send_json(400, {'error': 'invalid json'})
+            return
+
+        result = self.handle_command(command)
+        self.send_json(200, result)
+
+    def handle_command(self, command):
+        print(f'[Agent] Command: {command}')
+
+        # ── key: prefix → send keystroke ──────────────────────────────────
+        if command.startswith('key:'):
+            key = command[4:].strip()
+            mapped = KEY_MAP.get(key, key.lower())
+            try:
+                import pyautogui
+                pyautogui.press(mapped)
+                return {'ok': True, 'action': 'key', 'key': mapped}
+            except ImportError:
+                # Fallback: use PowerShell to send key
+                ps = f'$wsh = New-Object -ComObject WScript.Shell; $wsh.SendKeys("{{{mapped.upper()}}}")'
+                subprocess.Popen(['powershell', '-Command', ps], shell=True)
+                return {'ok': True, 'action': 'key_ps', 'key': mapped}
+
+        # ── type: prefix → type text ───────────────────────────────────────
+        if command.startswith('type:'):
+            text = command[5:]
+            try:
+                import pyautogui
+                time.sleep(0.1)
+                pyautogui.typewrite(text, interval=0.03)
+                return {'ok': True, 'action': 'type', 'text': text}
+            except ImportError:
+                # PowerShell fallback
+                safe = text.replace("'", "''")
+                ps = f"$wsh = New-Object -ComObject WScript.Shell; $wsh.SendKeys('{safe}')"
+                subprocess.Popen(['powershell', '-Command', ps], shell=True)
+                return {'ok': True, 'action': 'type_ps', 'text': text}
+
+        # ── volume: prefix → system volume ────────────────────────────────
+        if command.startswith('volume:'):
+            try:
+                level = int(command.split(':')[1])
+                # Requires nircmd: https://www.nirsoft.net/utils/nircmd.html
+                subprocess.Popen(['nircmd', 'setsysvolume', str(int(level / 100 * 65535))])
+                return {'ok': True, 'action': 'volume', 'level': level}
+            except Exception as e:
+                return {'ok': False, 'error': str(e)}
+
+        # ── named app → launch ─────────────────────────────────────────────
+        if command in APP_MAP:
+            path = APP_MAP[command]
+            if not os.path.exists(path):
+                # Try launching by name (may be in PATH or Windows Store)
+                try:
+                    subprocess.Popen([command], shell=True)
+                    return {'ok': True, 'action': 'launch_shell', 'command': command}
+                except Exception as e:
+                    return {'ok': False, 'error': f'Not found at {path}: {e}'}
+            try:
+                subprocess.Popen([path])
+                return {'ok': True, 'action': 'launch', 'app': command, 'path': path}
+            except Exception as e:
+                return {'ok': False, 'error': str(e)}
+
+        # ── arbitrary shell command (use with care) ────────────────────────
+        if command.startswith('shell:'):
+            cmd = command[6:]
+            try:
+                subprocess.Popen(cmd, shell=True)
+                return {'ok': True, 'action': 'shell', 'command': cmd}
+            except Exception as e:
+                return {'ok': False, 'error': str(e)}
+
+        return {'ok': False, 'error': f'Unknown command: {command}'}
+
+
+def main():
+    server = http.server.ThreadingHTTPServer(('0.0.0.0', PORT), AgentHandler)
+    print(f'[Agent] Movie Room PC Agent running on http://0.0.0.0:{PORT}')
+    print(f'[Agent] Local IP: check ipconfig for your 192.168.x.x address')
+    print(f'[Agent] Press Ctrl+C to stop')
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print('\\n[Agent] Stopped.')
+        server.shutdown()
+
+
+if __name__ == '__main__':
+    main()
+`,
+  'install-agent.bat': `@echo off
+:: Movie Room Remote — PC Agent Installer
+:: Run this as Administrator to register the agent as a Windows startup task.
+:: It will start automatically when you log in.
+
+setlocal
+
+set AGENT_NAME=MovieRoomPCAgent
+set AGENT_DIR=%~dp0
+set AGENT_SCRIPT=%AGENT_DIR%pc-agent.py
+
+echo.
+echo ==========================================
+echo  Movie Room Remote — PC Agent Installer
+echo ==========================================
+echo.
+
+:: Check Python
+python --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ERROR: Python is not installed or not in PATH.
+    echo Download Python from https://www.python.org/downloads/
+    echo Make sure to check "Add Python to PATH" during install.
+    pause
+    exit /b 1
+)
+
+echo [1/3] Python found.
+
+:: Install pyautogui for keyboard control (optional but recommended)
+echo [2/3] Installing pyautogui (for keyboard/mouse control)...
+pip install pyautogui --quiet
+
+:: Register as scheduled task (runs at login, stays in background)
+echo [3/3] Registering startup task "%AGENT_NAME%"...
+
+:: Remove old task if it exists
+schtasks /delete /tn "%AGENT_NAME%" /f >nul 2>&1
+
+:: Create new task
+schtasks /create ^
+  /tn "%AGENT_NAME%" ^
+  /tr "pythonw \\"%AGENT_SCRIPT%\\"" ^
+  /sc onlogon ^
+  /delay 0000:30 ^
+  /rl limited ^
+  /f
+
+if %errorlevel% equ 0 (
+    echo.
+    echo ==========================================
+    echo  SUCCESS! PC Agent installed.
+    echo ==========================================
+    echo.
+    echo The agent will start automatically when you log in.
+    echo To start it now without rebooting, run:
+    echo.
+    echo   python "%AGENT_SCRIPT%"
+    echo.
+    echo Default port: 9876
+    echo.
+    echo NEXT STEPS:
+    echo  1. Find your PC's local IP: run ipconfig, look for 192.168.x.x
+    echo  2. In the Movie Room app, open Settings ^> Kodi ^& PC Agent
+    echo  3. Set PC Agent URL to: http://192.168.x.x:9876
+    echo  4. Tap "Ping Agent" to confirm connection
+    echo.
+    echo CUSTOMIZE APPS:
+    echo  Edit pc-agent.py and update the APP_MAP paths at the top
+    echo  to match where your apps are installed.
+    echo.
+) else (
+    echo.
+    echo WARNING: Could not create scheduled task.
+    echo You may need to run this script as Administrator.
+    echo.
+    echo Alternative: Add a shortcut to pc-agent.py in your
+    echo Startup folder: shell:startup
+    echo.
+)
+
+echo Press any key to start the agent now for testing...
+pause >nul
+start "Movie Room PC Agent" python "%AGENT_SCRIPT%"
+echo Agent started. Check your taskbar for the console window.
+echo.
+pause
+`,
+};
+
+function downloadEmbeddedFile(filename) {
+  const content = EMBEDDED_FILES[filename];
+  if(!content) { showToast('⚠️ File not found', 'error'); return; }
+  const mimeType = filename.endsWith('.py') ? 'text/x-python' : 'application/x-msdos-program';
+  const blob = new Blob([content], {type: mimeType});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`📥 ${filename} downloaded`);
+}
+
+
+function downloadHaYaml() {
+  const content = `# ═══════════════════════════════════════════════════════════════════════
+# Movie Room Remote — Home Assistant Automations
+# ═══════════════════════════════════════════════════════════════════════
+#
+# HOW TO USE:
+#   Option A (easiest): In HA go to Settings → Automations & Scenes →
+#   click the three-dot menu (⋮) → "Import from YAML" and paste each
+#   automation block below one at a time.
+#
+#   Option B: Copy each automation block into a separate automation
+#   created manually. The trigger is the important part — the Webhook ID
+#   must match exactly what you entered in the Movie Room Remote app.
+#
+# BEFORE YOU START: Replace the entity IDs below with your actual ones.
+# Find them in HA → Developer Tools → States (search for your device name).
+# Common replacements needed:
+#   media_player.tcl_tv          → your TV entity
+#   media_player.yamaha_receiver → your Yamaha entity
+#   media_player.sonos_soundbar  → your Sonos entity
+#   light.movie_room             → your lights entity
+# ═══════════════════════════════════════════════════════════════════════
+
+# ─── AUTOMATION 1: CASUAL TV ─────────────────────────────────────────
+alias: "Movie Room — Casual TV"
+description: >
+  Triggered by the Movie Room Remote app when "Casual TV" is tapped.
+  Turns on the TV, switches to HDMI 1 (Fire TV), ensures Yamaha is off
+  so Sonos eARC handles audio automatically.
+trigger:
+  - platform: webhook
+    webhook_id: casual_tv_on    # ← must match your app setting exactly
+    allowed_methods:
+      - POST
+    local_only: true            # only accept from your local network
+condition: []
+action:
+  # 1. Turn on the TV
+  - service: media_player.turn_on
+    target:
+      entity_id: media_player.tcl_tv
+
+  # 2. Switch TV to HDMI 1 (Fire TV source)
+  # Note: wait a moment for TV to wake up before switching input
+  - delay:
+      milliseconds: 1500
+  - service: media_player.select_source
+    target:
+      entity_id: media_player.tcl_tv
+    data:
+      source: "HDMI 1"
+
+  # 3. Turn off Yamaha so Sonos eARC takes over
+  - service: media_player.turn_off
+    target:
+      entity_id: media_player.yamaha_receiver
+
+  # 4. Optional: unmute Sonos and set a comfortable volume
+  - service: media_player.volume_set
+    target:
+      entity_id: media_player.sonos_soundbar
+    data:
+      volume_level: 0.4         # 40% — adjust to taste
+
+  # 5. Optional: bring lights up to a comfortable level
+  # Remove or comment out if you don't have smart lights
+  - service: light.turn_on
+    target:
+      entity_id: light.movie_room
+    data:
+      brightness_pct: 60
+
+mode: single
+
+
+---
+
+
+# ─── AUTOMATION 2: MOVIE NIGHT ───────────────────────────────────────
+alias: "Movie Room — Movie Night"
+description: >
+  Triggered by the Movie Room Remote app when "Movie Night" is tapped.
+  Turns on the TV (HDMI 2), powers up the Yamaha 7.2 receiver,
+  and dims the room lights to 10% for a cinematic atmosphere.
+trigger:
+  - platform: webhook
+    webhook_id: movie_night_on   # ← must match your app setting exactly
+    allowed_methods:
+      - POST
+    local_only: true
+condition: []
+action:
+  # 1. Turn on the TV
+  - service: media_player.turn_on
+    target:
+      entity_id: media_player.tcl_tv
+
+  # 2. Switch TV to HDMI 2 (Gaming PC / Yamaha source)
+  - delay:
+      milliseconds: 1500
+  - service: media_player.select_source
+    target:
+      entity_id: media_player.tcl_tv
+    data:
+      source: "HDMI 2"
+
+  # 3. Turn on the Yamaha receiver
+  - service: media_player.turn_on
+    target:
+      entity_id: media_player.yamaha_receiver
+
+  # 4. Optional: set Yamaha to a surround mode
+  # Uncomment and adjust if your Yamaha integration supports this
+  # - service: media_player.select_sound_mode
+  #   target:
+  #     entity_id: media_player.yamaha_receiver
+  #   data:
+  #     sound_mode: "Dolby Atmos"
+
+  # 5. Mute Sonos (Yamaha is handling audio now)
+  - service: media_player.media_pause
+    target:
+      entity_id: media_player.sonos_soundbar
+
+  # 6. Dim the lights to 10% — cinematic!
+  - service: light.turn_on
+    target:
+      entity_id: light.movie_room
+    data:
+      brightness_pct: 10
+      transition: 3             # gentle 3-second fade
+
+mode: single
+
+
+---
+
+
+# ─── AUTOMATION 3: POWER OFF (optional but recommended) ──────────────
+alias: "Movie Room — Power Off All"
+description: >
+  Triggered by the Movie Room Remote app "Power Off" button.
+  Turns everything off and brings lights back up.
+trigger:
+  - platform: webhook
+    webhook_id: all_off          # ← must match your app setting exactly
+    allowed_methods:
+      - POST
+    local_only: true
+condition: []
+action:
+  # Turn off all media devices
+  - service: media_player.turn_off
+    target:
+      entity_id:
+        - media_player.tcl_tv
+        - media_player.yamaha_receiver
+        - media_player.sonos_soundbar
+
+  # Bring lights back to full
+  - service: light.turn_on
+    target:
+      entity_id: light.movie_room
+    data:
+      brightness_pct: 100
+      transition: 2
+
+mode: single
+
+
+---
+
+
+# ─── OPTIONAL: MOVIE LIBRARY MODE ────────────────────────────────────
+# Only needed if you want HA to handle the HDMI switch for Movie Library
+# mode instead of the PC agent doing it. Most setups won't need this.
+#
+# alias: "Movie Room — Movie Library"
+# trigger:
+#   - platform: webhook
+#     webhook_id: movie_library_on
+#     allowed_methods: [POST]
+#     local_only: true
+# action:
+#   - service: media_player.turn_on
+#     target: {entity_id: media_player.tcl_tv}
+#   - delay: {milliseconds: 1500}
+#   - service: media_player.select_source
+#     target: {entity_id: media_player.tcl_tv}
+#     data: {source: "HDMI 2"}
+#   - service: media_player.turn_on
+#     target: {entity_id: media_player.yamaha_receiver}
+#   - service: light.turn_on
+#     target: {entity_id: light.movie_room}
+#     data: {brightness_pct: 10, transition: 3}
+`;
+  const blob = new Blob([content], {type: 'text/yaml'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'ha-automations.yaml';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('📥 ha-automations.yaml downloaded');
+}
+
+function downloadAllAgentFiles() {
+  downloadEmbeddedFile('pc-agent.py');
+  setTimeout(() => downloadEmbeddedFile('install-agent.bat'), 400);
+  setTimeout(() => showToast('📥 Both files downloaded — check your Downloads folder'), 800);
 }
 
 /* ═══════════════════════════════════════════

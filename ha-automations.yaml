@@ -1,0 +1,194 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Movie Room Remote — Home Assistant Automations
+# ═══════════════════════════════════════════════════════════════════════
+#
+# HOW TO USE:
+#   Option A (easiest): In HA go to Settings → Automations & Scenes →
+#   click the three-dot menu (⋮) → "Import from YAML" and paste each
+#   automation block below one at a time.
+#
+#   Option B: Copy each automation block into a separate automation
+#   created manually. The trigger is the important part — the Webhook ID
+#   must match exactly what you entered in the Movie Room Remote app.
+#
+# BEFORE YOU START: Replace the entity IDs below with your actual ones.
+# Find them in HA → Developer Tools → States (search for your device name).
+# Common replacements needed:
+#   media_player.tcl_tv          → your TV entity
+#   media_player.yamaha_receiver → your Yamaha entity
+#   media_player.sonos_soundbar  → your Sonos entity
+#   light.movie_room             → your lights entity
+# ═══════════════════════════════════════════════════════════════════════
+
+# ─── AUTOMATION 1: CASUAL TV ─────────────────────────────────────────
+alias: "Movie Room — Casual TV"
+description: >
+  Triggered by the Movie Room Remote app when "Casual TV" is tapped.
+  Turns on the TV, switches to HDMI 1 (Fire TV), ensures Yamaha is off
+  so Sonos eARC handles audio automatically.
+trigger:
+  - platform: webhook
+    webhook_id: casual_tv_on    # ← must match your app setting exactly
+    allowed_methods:
+      - POST
+    local_only: true            # only accept from your local network
+condition: []
+action:
+  # 1. Turn on the TV
+  - service: media_player.turn_on
+    target:
+      entity_id: media_player.tcl_tv
+
+  # 2. Switch TV to HDMI 1 (Fire TV source)
+  # Note: wait a moment for TV to wake up before switching input
+  - delay:
+      milliseconds: 1500
+  - service: media_player.select_source
+    target:
+      entity_id: media_player.tcl_tv
+    data:
+      source: "HDMI 1"
+
+  # 3. Turn off Yamaha so Sonos eARC takes over
+  - service: media_player.turn_off
+    target:
+      entity_id: media_player.yamaha_receiver
+
+  # 4. Optional: unmute Sonos and set a comfortable volume
+  - service: media_player.volume_set
+    target:
+      entity_id: media_player.sonos_soundbar
+    data:
+      volume_level: 0.4         # 40% — adjust to taste
+
+  # 5. Optional: bring lights up to a comfortable level
+  # Remove or comment out if you don't have smart lights
+  - service: light.turn_on
+    target:
+      entity_id: light.movie_room
+    data:
+      brightness_pct: 60
+
+mode: single
+
+
+---
+
+
+# ─── AUTOMATION 2: MOVIE NIGHT ───────────────────────────────────────
+alias: "Movie Room — Movie Night"
+description: >
+  Triggered by the Movie Room Remote app when "Movie Night" is tapped.
+  Turns on the TV (HDMI 2), powers up the Yamaha 7.2 receiver,
+  and dims the room lights to 10% for a cinematic atmosphere.
+trigger:
+  - platform: webhook
+    webhook_id: movie_night_on   # ← must match your app setting exactly
+    allowed_methods:
+      - POST
+    local_only: true
+condition: []
+action:
+  # 1. Turn on the TV
+  - service: media_player.turn_on
+    target:
+      entity_id: media_player.tcl_tv
+
+  # 2. Switch TV to HDMI 2 (Gaming PC / Yamaha source)
+  - delay:
+      milliseconds: 1500
+  - service: media_player.select_source
+    target:
+      entity_id: media_player.tcl_tv
+    data:
+      source: "HDMI 2"
+
+  # 3. Turn on the Yamaha receiver
+  - service: media_player.turn_on
+    target:
+      entity_id: media_player.yamaha_receiver
+
+  # 4. Optional: set Yamaha to a surround mode
+  # Uncomment and adjust if your Yamaha integration supports this
+  # - service: media_player.select_sound_mode
+  #   target:
+  #     entity_id: media_player.yamaha_receiver
+  #   data:
+  #     sound_mode: "Dolby Atmos"
+
+  # 5. Mute Sonos (Yamaha is handling audio now)
+  - service: media_player.media_pause
+    target:
+      entity_id: media_player.sonos_soundbar
+
+  # 6. Dim the lights to 10% — cinematic!
+  - service: light.turn_on
+    target:
+      entity_id: light.movie_room
+    data:
+      brightness_pct: 10
+      transition: 3             # gentle 3-second fade
+
+mode: single
+
+
+---
+
+
+# ─── AUTOMATION 3: POWER OFF (optional but recommended) ──────────────
+alias: "Movie Room — Power Off All"
+description: >
+  Triggered by the Movie Room Remote app "Power Off" button.
+  Turns everything off and brings lights back up.
+trigger:
+  - platform: webhook
+    webhook_id: all_off          # ← must match your app setting exactly
+    allowed_methods:
+      - POST
+    local_only: true
+condition: []
+action:
+  # Turn off all media devices
+  - service: media_player.turn_off
+    target:
+      entity_id:
+        - media_player.tcl_tv
+        - media_player.yamaha_receiver
+        - media_player.sonos_soundbar
+
+  # Bring lights back to full
+  - service: light.turn_on
+    target:
+      entity_id: light.movie_room
+    data:
+      brightness_pct: 100
+      transition: 2
+
+mode: single
+
+
+---
+
+
+# ─── OPTIONAL: MOVIE LIBRARY MODE ────────────────────────────────────
+# Only needed if you want HA to handle the HDMI switch for Movie Library
+# mode instead of the PC agent doing it. Most setups won't need this.
+#
+# alias: "Movie Room — Movie Library"
+# trigger:
+#   - platform: webhook
+#     webhook_id: movie_library_on
+#     allowed_methods: [POST]
+#     local_only: true
+# action:
+#   - service: media_player.turn_on
+#     target: {entity_id: media_player.tcl_tv}
+#   - delay: {milliseconds: 1500}
+#   - service: media_player.select_source
+#     target: {entity_id: media_player.tcl_tv}
+#     data: {source: "HDMI 2"}
+#   - service: media_player.turn_on
+#     target: {entity_id: media_player.yamaha_receiver}
+#   - service: light.turn_on
+#     target: {entity_id: light.movie_room}
+#     data: {brightness_pct: 10, transition: 3}
